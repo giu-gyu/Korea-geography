@@ -5,6 +5,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -47,12 +48,14 @@ fun MapScreen(viewModel: QuizViewModel = viewModel()) {
     var canvasSize by remember { mutableStateOf(Size.Zero) }
     var hasPlayedIntro by rememberSaveable { mutableStateOf(false) }
     var showCompletionDialog by remember(uiState.level.key) { mutableStateOf(false) }
+    var fitScale by remember { mutableStateOf(1f) }
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(uiState.level.key, uiState.regions, canvasSize) {
         if (uiState.regions.isEmpty() || canvasSize == Size.Zero) return@LaunchedEffect
         val bounds = unionBounds(uiState.regions)
         val target = fitTransform(bounds, canvasSize)
+        fitScale = target.scale
         if (uiState.level is MapLevel.National && !hasPlayedIntro) {
             hasPlayedIntro = true
             val startBounds = zoomedBounds(bounds, factor = 0.12f, verticalAnchor = 0.9f)
@@ -98,6 +101,7 @@ fun MapScreen(viewModel: QuizViewModel = viewModel()) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .navigationBarsPadding()
                         .padding(horizontal = 20.dp, vertical = 14.dp),
                 ) {
                     if (!uiState.started) {
@@ -132,6 +136,8 @@ fun MapScreen(viewModel: QuizViewModel = viewModel()) {
                 started = uiState.started,
                 selectedRegionCode = uiState.selectedRegionCode,
                 camera = camera,
+                fitScale = fitScale,
+                baseLabelSp = if (uiState.level is MapLevel.National) 9f else 13f,
                 onCanvasSizeChanged = { canvasSize = it },
                 onTapRegion = viewModel::tapRegion,
                 modifier = Modifier.fillMaxSize(),

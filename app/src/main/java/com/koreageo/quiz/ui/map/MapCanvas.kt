@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.toSize
 import com.koreageo.quiz.geo.Region
 import com.koreageo.quiz.geo.hitTest
 import com.koreageo.quiz.quiz.GuessState
+import kotlin.math.sqrt
 import kotlinx.coroutines.launch
 
 @Composable
@@ -33,6 +34,8 @@ fun MapCanvas(
     started: Boolean,
     selectedRegionCode: String?,
     camera: CameraState,
+    fitScale: Float,
+    baseLabelSp: Float,
     onCanvasSizeChanged: (Size) -> Unit,
     onTapRegion: (Region) -> Unit,
     modifier: Modifier = Modifier,
@@ -91,11 +94,16 @@ fun MapCanvas(
             val showLabel = !started || guess.revealed
             if (showLabel) {
                 val labelPoint = transform.worldToScreen(region.centroid)
+                // Labels grow as the user zooms in past this level's default fit, and shrink
+                // (down to a floor) when zoomed out — sqrt-damped so screen distance between
+                // neighboring labels grows faster than the text itself, easing overlap.
+                val zoomRatio = (transform.scale / fitScale).coerceAtLeast(0.05f)
+                val fontSizeSp = (baseLabelSp * sqrt(zoomRatio)).coerceIn(baseLabelSp * 0.6f, baseLabelSp * 3f)
                 val layout = textMeasurer.measure(
                     text = region.name,
                     style = TextStyle(
                         color = LABEL_TEXT_COLOR,
-                        fontSize = 12.sp,
+                        fontSize = fontSizeSp.sp,
                         fontWeight = FontWeight.SemiBold,
                         textAlign = TextAlign.Center,
                     ),
