@@ -82,18 +82,26 @@ class CameraState {
         launch { ty.animateTo(transform.ty, spec) }
     }
 
-    suspend fun panBy(dx: Float, dy: Float) = coroutineScope {
-        launch { tx.snapTo(tx.value + dx) }
-        launch { ty.snapTo(ty.value + dy) }
+    suspend fun panBy(dx: Float, dy: Float) {
+        tx.snapTo(tx.value + dx)
+        ty.snapTo(ty.value + dy)
     }
 
-    suspend fun zoomBy(factor: Float, focus: Offset) = coroutineScope {
-        val newScale = (scale.value * factor).coerceIn(0.3f, 40f)
+    /**
+     * [minScale]/[maxScale] must be in the same units as [Transform.scale] — which depends on
+     * the world extent currently being fit to screen (a few hundred for the national view, a
+     * few thousand for a single province). Pass bounds derived from the current fit scale
+     * (e.g. `fitScale * 0.5f` / `fitScale * 8f`), never fixed absolute numbers: a fixed range
+     * that happens to sit below the natural fit scale clamps the very first pinch down to that
+     * ceiling and never lets it grow back.
+     */
+    suspend fun zoomBy(factor: Float, focus: Offset, minScale: Float, maxScale: Float) {
+        val newScale = (scale.value * factor).coerceIn(minScale, maxScale)
         val actualFactor = newScale / scale.value
         val newTx = focus.x - (focus.x - tx.value) * actualFactor
         val newTy = focus.y - (focus.y - ty.value) * actualFactor
-        launch { scale.snapTo(newScale) }
-        launch { tx.snapTo(newTx) }
-        launch { ty.snapTo(newTy) }
+        scale.snapTo(newScale)
+        tx.snapTo(newTx)
+        ty.snapTo(newTy)
     }
 }

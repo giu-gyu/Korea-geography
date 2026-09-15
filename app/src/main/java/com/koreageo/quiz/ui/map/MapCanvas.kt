@@ -52,10 +52,12 @@ fun MapCanvas(
                     regions.hitTest(worldPoint)?.let(onTapRegion)
                 }
             }
-            .pointerInput(Unit) {
+            .pointerInput(fitScale) {
                 detectTransformGestures { centroid, pan, zoom, _ ->
                     scope.launch {
-                        if (zoom != 1f) camera.zoomBy(zoom, centroid)
+                        if (zoom != 1f) {
+                            camera.zoomBy(zoom, centroid, minScale = fitScale * 0.5f, maxScale = fitScale * 8f)
+                        }
                         if (pan != Offset.Zero) camera.panBy(pan.x, pan.y)
                     }
                 }
