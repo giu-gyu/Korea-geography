@@ -1,5 +1,6 @@
 package com.koreageo.quiz.ui.map
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Box
@@ -53,6 +54,11 @@ fun MapScreen(viewModel: QuizViewModel = viewModel()) {
     var showSettingsDialog by remember { mutableStateOf(false) }
     var fitScale by remember { mutableStateOf(1f) }
     val snackbarHostState = remember { SnackbarHostState() }
+
+    // 도(道) 화면에서 시스템 뒤로가기를 누르면 앱을 나가지 말고 전국 화면으로 이동한다.
+    BackHandler(enabled = uiState.level is MapLevel.Province) {
+        viewModel.backToNational()
+    }
 
     LaunchedEffect(uiState.level.key, uiState.regions, canvasSize) {
         if (uiState.regions.isEmpty() || canvasSize == Size.Zero) return@LaunchedEffect
