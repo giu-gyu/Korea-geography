@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -119,9 +118,7 @@ fun MapScreen(viewModel: QuizViewModel = viewModel()) {
                         .padding(horizontal = 20.dp, vertical = 14.dp),
                 ) {
                     if (!uiState.started) {
-                        Button(onClick = viewModel::startQuiz, modifier = Modifier.fillMaxWidth()) {
-                            Text("시작")
-                        }
+                        ChallengeButton(onClick = viewModel::startQuiz, modifier = Modifier.fillMaxWidth())
                     } else {
                         Box(modifier = Modifier.fillMaxWidth()) {
                             Text(

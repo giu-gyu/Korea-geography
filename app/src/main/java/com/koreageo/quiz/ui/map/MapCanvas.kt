@@ -7,6 +7,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
@@ -21,6 +22,7 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.toSize
@@ -109,8 +111,9 @@ fun MapCanvas(
         val labelBoxes = ArrayList<LabelBox>(drawOrder.size)
         for (region in drawOrder) {
             val guess = guesses[region.code] ?: GuessState()
-            val showLabel = (!started && showLabelsInBrowseMode) || guess.revealed
-            if (!showLabel) continue
+            val showText = guess.revealed || (!started && showLabelsInBrowseMode)
+            val showBlank = started && !guess.revealed
+            if (!showText && !showBlank) continue
 
             // Labels grow as the user zooms in past this level's default fit, and shrink
             // (down to a floor) when zoomed out — sqrt-damped so screen distance between
@@ -140,16 +143,31 @@ fun MapCanvas(
                 },
             )
             val anchor = transform.worldToScreen(region.centroid)
-            labelBoxes.add(LabelBox(layout, anchor.x, anchor.y))
+            labelBoxes.add(LabelBox(layout, isBlank = !showText, anchor.x, anchor.y))
         }
 
         resolveLabelOverlaps(labelBoxes)
 
+        val blankPaddingPx = 4.dp.toPx()
         for (box in labelBoxes) {
-            drawText(
-                box.layout,
-                topLeft = Offset(box.cx - box.halfWidth, box.cy - box.halfHeight),
-            )
+            if (box.isBlank) {
+                val topLeft = Offset(box.cx - box.halfWidth - blankPaddingPx, box.cy - box.halfHeight - blankPaddingPx)
+                val size = Size(box.layout.size.width + blankPaddingPx * 2, box.layout.size.height + blankPaddingPx * 2)
+                val cornerRadius = CornerRadius(blankPaddingPx)
+                drawRoundRect(color = BLANK_FILL_COLOR, topLeft = topLeft, size = size, cornerRadius = cornerRadius)
+                drawRoundRect(
+                    color = BLANK_STROKE_COLOR,
+                    topLeft = topLeft,
+                    size = size,
+                    cornerRadius = cornerRadius,
+                    style = Stroke(width = 1.5f),
+                )
+            } else {
+                drawText(
+                    box.layout,
+                    topLeft = Offset(box.cx - box.halfWidth, box.cy - box.halfHeight),
+                )
+            }
         }
     }
 }

@@ -3,9 +3,15 @@ package com.koreageo.quiz.ui.map
 import androidx.compose.ui.text.TextLayoutResult
 import kotlin.math.abs
 
-/** One label being laid out: a mutable screen-space center that [resolveLabelOverlaps] nudges. */
+/**
+ * One label being laid out: a mutable screen-space center that [resolveLabelOverlaps] nudges.
+ * [layout] is always the real name's measured text — used for sizing even when [isBlank] is
+ * true, so a not-yet-answered region's blank placeholder is the same size the revealed name
+ * will be.
+ */
 class LabelBox(
     val layout: TextLayoutResult,
+    val isBlank: Boolean,
     var cx: Float,
     var cy: Float,
 ) {
