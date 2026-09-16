@@ -7,6 +7,8 @@ import com.koreageo.quiz.geo.GeoRepository
 import com.koreageo.quiz.geo.Region
 import com.koreageo.quiz.history.HistoryEntry
 import com.koreageo.quiz.history.HistoryRepository
+import com.koreageo.quiz.session.SavedSession
+import com.koreageo.quiz.session.SessionRepository
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -34,6 +36,7 @@ class QuizViewModel(application: Application) : AndroidViewModel(application) {
 
     private val repository = GeoRepository(application)
     private val historyRepository = HistoryRepository(application)
+    private val sessionRepository = SessionRepository(application)
 
     // quiz progress kept per level so it survives navigating back and forth
     private val guessesByLevel = mutableMapOf<String, Map<String, GuessState>>()
@@ -63,7 +66,24 @@ class QuizViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     init {
-        loadNational()
+        val saved = sessionRepository.load()
+        if (saved != null) {
+            guessesByLevel.putAll(saved.guessesByLevel)
+            startedByLevel.putAll(saved.startedByLevel)
+            questStartedAtByLevel.putAll(saved.questStartedAtByLevel)
+        }
+        if (saved != null && saved.currentLevelType == "province" &&
+            saved.currentProvinceCode != null && saved.currentProvinceName != null
+        ) {
+            val level = MapLevel.Province(code = saved.currentProvinceCode, name = saved.currentProvinceName)
+            viewModelScope.launch {
+                _uiState.update { it.copy(isLoading = true, level = level) }
+                val regions = repository.loadSigungu(saved.currentProvinceCode)
+                applyLevel(level, regions)
+            }
+        } else {
+            loadNational()
+        }
     }
 
     private fun loadNational() {
@@ -105,6 +125,7 @@ class QuizViewModel(application: Application) : AndroidViewModel(application) {
                 selectedRegionCode = null,
             )
         }
+        persistSession()
     }
 
     fun startQuiz() {
@@ -210,6 +231,27 @@ class QuizViewModel(application: Application) : AndroidViewModel(application) {
         val state = _uiState.value
         guessesByLevel[state.level.key] = state.guesses
         startedByLevel[state.level.key] = state.started
+        persistSession()
+    }
+
+    /**
+     * Saves the whole session (current screen + every level's progress) to disk so it survives
+     * the app's process being killed in the background — otherwise reopening the app after even
+     * a brief switch to another app could find the quiz looking "reset" if Android had killed
+     * the process in the meantime, since everything above lived only in memory.
+     */
+    private fun persistSession() {
+        val level = _uiState.value.level
+        sessionRepository.save(
+            SavedSession(
+                currentLevelType = if (level is MapLevel.Province) "province" else "national",
+                currentProvinceCode = (level as? MapLevel.Province)?.code,
+                currentProvinceName = (level as? MapLevel.Province)?.name,
+                guessesByLevel = guessesByLevel.toMap(),
+                startedByLevel = startedByLevel.toMap(),
+                questStartedAtByLevel = questStartedAtByLevel.toMap(),
+            ),
+        )
     }
 
     private fun recordCompletionIfJustFinished() {
@@ -225,5 +267,6 @@ class QuizViewModel(application: Application) : AndroidViewModel(application) {
         )
         historyRepository.addEntry(entry)
         _lastCompletion.value = entry
+        persistSession()
     }
 }
