@@ -115,10 +115,12 @@ class QuizViewModel(application: Application) : AndroidViewModel(application) {
         val state = _uiState.value
         val alreadyRevealed = state.guesses[region.code]?.revealed == true
 
-        // 전국 화면에서는 아직 도전을 시작하지 않았거나 그 지역을 이미 맞혔다면 —
-        // 더 맞힐 게 없으니 — 탭으로 그 도/시 안으로 들어간다. 도전 중인데 아직
-        // 안 맞힌 지역만 정답 입력 대상이 된다.
-        if (state.level is MapLevel.National && (!state.started || alreadyRevealed)) {
+        // 전국 화면에서는 아직 도전을 시작 안 했거나, 도전을 이미 다 끝냈을 때만 탭으로
+        // 그 도/시 안으로 들어간다. 도전이 진행 중일 때는(아직 다 못 맞혔을 때는) 이미
+        // 맞힌 지역이라도 진입시키지 않는다 — 안 그러면 경기도처럼 이미 맞힌 큰 지역
+        // 근처를 탭할 때마다 실수로 그 안으로 들어가버려서, 서울특별시처럼 작고
+        // 붙어있는 지역을 마저 맞히기가 어려워진다.
+        if (state.level is MapLevel.National && (!state.started || state.completed)) {
             selectProvince(region)
             return
         }
