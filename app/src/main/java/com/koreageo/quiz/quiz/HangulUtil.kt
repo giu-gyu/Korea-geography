@@ -37,7 +37,7 @@ private val PROVINCE_ALIASES: Map<String, Set<String>> = mapOf(
     "광주광역시" to setOf("광주", "광주시"),
     "대전광역시" to setOf("대전", "대전시"),
     "울산광역시" to setOf("울산", "울산시"),
-    "세종특별자치시" to setOf("세종", "세종시"),
+    "세종시" to setOf("세종", "세종특별자치시"),
     "경기도" to setOf("경기"),
     "강원도" to setOf("강원"),
     "충청북도" to setOf("충북"),
@@ -46,7 +46,7 @@ private val PROVINCE_ALIASES: Map<String, Set<String>> = mapOf(
     "전라남도" to setOf("전남"),
     "경상북도" to setOf("경북"),
     "경상남도" to setOf("경남"),
-    "제주특별자치도" to setOf("제주", "제주도"),
+    "제주도" to setOf("제주", "제주특별자치도"),
 )
 
 fun isCorrectAnswer(input: String, correctName: String): Boolean {
