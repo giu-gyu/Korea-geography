@@ -49,13 +49,20 @@ private val PROVINCE_ALIASES: Map<String, Set<String>> = mapOf(
     "제주도" to setOf("제주", "제주특별자치도"),
 )
 
+/** 시/군/구는 항상 이 세 글자 중 하나로 끝나므로, 그 글자를 뗀 형태도 정답으로 인정한다. */
+private val STRIPPABLE_SUFFIXES = setOf('시', '군', '구')
+
 fun isCorrectAnswer(input: String, correctName: String): Boolean {
     val normalizedInput = normalizeAnswer(input)
     if (normalizedInput.isEmpty()) return false
     if (normalizedInput == correctName) return true
 
-    // 자치구(강남구, 서초구, 남구 등)는 "구"를 뗀 이름("강남", "서초", "남")도 정답으로 인정한다.
-    if (correctName.length > 1 && correctName.endsWith("구") && normalizedInput == correctName.dropLast(1)) {
+    // 경산시->경산, 청도군->청도, 서초구->서초 처럼 마지막 글자(시/군/구)를 뗀 형태도 인정한다.
+    // "도"로 끝나는 광역자치단체(경상북도 등)는 단순히 한 글자를 떼는 게 아니라 아래
+    // PROVINCE_ALIASES에 별도로 정리된 축약형(경북 등)을 쓰므로 여기서는 다루지 않는다.
+    if (correctName.length > 1 && correctName.last() in STRIPPABLE_SUFFIXES &&
+        normalizedInput == correctName.dropLast(1)
+    ) {
         return true
     }
 
