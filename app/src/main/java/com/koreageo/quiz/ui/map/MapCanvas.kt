@@ -75,7 +75,14 @@ fun MapCanvas(
             .pointerInput(regions) {
                 detectTapGestures { screenPoint ->
                     val worldPoint = camera.current.screenToWorld(screenPoint)
-                    val hit = regions.hitTest(worldPoint) ?: return@detectTapGestures
+                    // A near-miss should still land on a small not-yet-answered region (e.g.
+                    // 서울특별시) instead of the huge already-answered neighbor around it (e.g.
+                    // 경기도) — otherwise, once the big region is solved, the tiny one becomes
+                    // almost impossible to tap precisely enough.
+                    val toleranceWorld = 28f / camera.current.scale
+                    val hit = regions.hitTest(worldPoint, toleranceWorld) { candidate ->
+                        guesses[candidate.code]?.revealed != true
+                    } ?: return@detectTapGestures
                     flashRegionCode = hit.code
                     scope.launch {
                         flashAlpha.snapTo(1f)
@@ -182,10 +189,11 @@ fun MapCanvas(
         val blankPaddingPx = 4.dp.toPx()
         for (box in labelBoxes) {
             if (box.isBlank) {
+                // Transparent — no fill — so the region's own color (and the tap-flash
+                // highlight) still shows through the blank, confirming what got tapped.
                 val topLeft = Offset(box.cx - box.halfWidth - blankPaddingPx, box.cy - box.halfHeight - blankPaddingPx)
                 val size = Size(box.layout.size.width + blankPaddingPx * 2, box.layout.size.height + blankPaddingPx * 2)
                 val cornerRadius = CornerRadius(blankPaddingPx)
-                drawRoundRect(color = BLANK_FILL_COLOR, topLeft = topLeft, size = size, cornerRadius = cornerRadius)
                 drawRoundRect(
                     color = BLANK_STROKE_COLOR,
                     topLeft = topLeft,

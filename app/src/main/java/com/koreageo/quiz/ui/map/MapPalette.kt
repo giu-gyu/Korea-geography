@@ -23,8 +23,8 @@ val REGION_REVEALED_FILL_BOOST = 0.15f
 val REGION_SELECTED_STROKE = Color(0xFFE2572B)
 val LABEL_TEXT_COLOR = Color(0xFF1F2D2A)
 
-/** Fill-in-the-blank placeholder shown over a not-yet-answered region during a quiz. */
-val BLANK_FILL_COLOR = Color(0xF2FFFFFF)
+/** Fill-in-the-blank placeholder shown over a not-yet-answered region during a quiz — outline
+ * only (no fill), so the region's own color still shows through. */
 val BLANK_STROKE_COLOR = Color(0xFF8A9A96)
 
 /** The "도전" (challenge) button — deliberately loud, unlike the rest of the muted map palette. */
