@@ -1,5 +1,6 @@
 package com.koreageo.quiz.ui.map
 
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -29,6 +30,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.BiasAlignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -59,12 +61,17 @@ fun AnswerSheet(
         Box(
             modifier = Modifier
                 .fillMaxSize()
+                // 카드 바깥(비활성화된 영역)을 누르면 취소 버튼 없이도 바로 문제를 취소한다.
+                .pointerInput(Unit) { detectTapGestures { onDismiss() } }
                 .navigationBarsPadding()
                 .padding(bottom = 12.dp),
             contentAlignment = BiasAlignment(0f, 0.85f),
         ) {
             Card(
-                modifier = Modifier.fillMaxWidth(0.86f),
+                modifier = Modifier
+                    .fillMaxWidth(0.86f)
+                    // 카드 위 탭은 여기서 흡수해서 뒤쪽 배경의 취소 탭 핸들러로 전달되지 않게 한다.
+                    .pointerInput(Unit) { detectTapGestures {} },
                 shape = RoundedCornerShape(28.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 elevation = CardDefaults.cardElevation(defaultElevation = 10.dp),
@@ -73,13 +80,6 @@ fun AnswerSheet(
                     modifier = Modifier.padding(horizontal = 22.dp, vertical = 24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    Text(
-                        text = "이 지역의 이름은 무엇일까요?",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        textAlign = TextAlign.Center,
-                    )
-                    Spacer(Modifier.height(16.dp))
                     OutlinedTextField(
                         value = answer,
                         onValueChange = { newValue ->
@@ -134,16 +134,14 @@ fun AnswerSheet(
                         )
                     }
 
-                    Spacer(Modifier.height(18.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                    ) {
-                        TextButton(onClick = onDismiss) { Text("취소") }
-                        Row {
+                    if (!guess.characterCountHintShown || !guess.choseongHintShown) {
+                        Spacer(Modifier.height(18.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.End),
+                        ) {
                             if (!guess.characterCountHintShown) {
                                 TextButton(onClick = onRequestCharacterCountHint) { Text("글자수 힌트") }
-                                Spacer(Modifier.width(4.dp))
                             }
                             if (!guess.choseongHintShown) {
                                 TextButton(onClick = onRequestChoseongHint) { Text("초성 힌트") }
