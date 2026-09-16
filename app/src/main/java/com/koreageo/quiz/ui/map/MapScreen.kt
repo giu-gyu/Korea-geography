@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -39,6 +40,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.koreageo.quiz.quiz.MapLevel
 import com.koreageo.quiz.quiz.QuizViewModel
 import com.koreageo.quiz.quiz.UiEvent
+import com.koreageo.quiz.quiz.displayName
 import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -46,11 +48,13 @@ import kotlinx.coroutines.delay
 fun MapScreen(viewModel: QuizViewModel = viewModel()) {
     val uiState by viewModel.uiState.collectAsState()
     val settings by viewModel.settings.collectAsState()
+    val lastCompletion by viewModel.lastCompletion.collectAsState()
     val camera = remember { CameraState() }
     var canvasSize by remember { mutableStateOf(Size.Zero) }
     var hasPlayedIntro by rememberSaveable { mutableStateOf(false) }
     var showCompletionDialog by remember(uiState.level.key) { mutableStateOf(false) }
     var showSettingsDialog by remember { mutableStateOf(false) }
+    var showHistoryDialog by remember { mutableStateOf(false) }
     var fitScale by remember { mutableStateOf(1f) }
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -90,76 +94,83 @@ fun MapScreen(viewModel: QuizViewModel = viewModel()) {
         }
     }
 
-    Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-        topBar = {
-            TopAppBar(
-                title = { Text(breadcrumb(uiState.level)) },
-                navigationIcon = {
-                    if (uiState.level is MapLevel.Province) {
-                        IconButton(onClick = viewModel::backToNational) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "전국 지도로")
+    Box(modifier = Modifier.fillMaxSize()) {
+        Scaffold(
+            snackbarHost = { SnackbarHost(snackbarHostState) },
+            topBar = {
+                TopAppBar(
+                    title = { Text(uiState.level.displayName()) },
+                    navigationIcon = {
+                        if (uiState.level is MapLevel.Province) {
+                            IconButton(onClick = viewModel::backToNational) {
+                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "전국 지도로")
+                            }
                         }
-                    }
-                },
-                actions = {
-                    IconButton(onClick = { showSettingsDialog = true }) {
-                        Icon(Icons.Filled.Settings, contentDescription = "설정")
-                    }
-                },
-            )
-        },
-        bottomBar = {
-            Surface(tonalElevation = 3.dp) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .navigationBarsPadding()
-                        .padding(horizontal = 20.dp, vertical = 14.dp),
-                ) {
-                    if (!uiState.started) {
-                        ChallengeButton(onClick = viewModel::startQuiz, modifier = Modifier.fillMaxWidth())
-                    } else {
-                        Box(modifier = Modifier.fillMaxWidth()) {
-                            Text(
-                                text = "${uiState.revealedCount} / ${uiState.regions.size} 완료",
-                                modifier = Modifier.align(Alignment.CenterStart),
-                                style = MaterialTheme.typography.bodyLarge,
-                            )
-                            OutlinedButton(
-                                onClick = viewModel::startQuiz,
-                                modifier = Modifier.align(Alignment.CenterEnd),
-                            ) { Text("다시 시작") }
+                    },
+                    actions = {
+                        IconButton(onClick = { showHistoryDialog = true }) {
+                            Icon(Icons.Filled.History, contentDescription = "기록")
+                        }
+                        IconButton(onClick = { showSettingsDialog = true }) {
+                            Icon(Icons.Filled.Settings, contentDescription = "설정")
+                        }
+                    },
+                )
+            },
+            bottomBar = {
+                Surface(tonalElevation = 3.dp) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .navigationBarsPadding()
+                            .padding(horizontal = 20.dp, vertical = 14.dp),
+                    ) {
+                        if (!uiState.started) {
+                            ChallengeButton(onClick = viewModel::startQuiz, modifier = Modifier.fillMaxWidth())
+                        } else {
+                            Box(modifier = Modifier.fillMaxWidth()) {
+                                Text(
+                                    text = "${uiState.revealedCount} / ${uiState.regions.size} 완료",
+                                    modifier = Modifier.align(Alignment.CenterStart),
+                                    style = MaterialTheme.typography.bodyLarge,
+                                )
+                                OutlinedButton(
+                                    onClick = viewModel::startQuiz,
+                                    modifier = Modifier.align(Alignment.CenterEnd),
+                                ) { Text("다시 시작") }
+                            }
                         }
                     }
                 }
-            }
-        },
-    ) { padding ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding),
-        ) {
-            MapCanvas(
-                regions = uiState.regions,
-                guesses = uiState.guesses,
-                started = uiState.started,
-                selectedRegionCode = uiState.selectedRegionCode,
-                camera = camera,
-                fitScale = fitScale,
-                baseLabelSp = if (uiState.level is MapLevel.National) 9f else 13f,
-                isNationalLevel = uiState.level is MapLevel.National,
-                showLabelsInBrowseMode = settings.showLabelsInBrowseMode,
-                onCanvasSizeChanged = { canvasSize = it },
-                onTapRegion = viewModel::tapRegion,
-                modifier = Modifier.fillMaxSize(),
-            )
+            },
+        ) { padding ->
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding),
+            ) {
+                MapCanvas(
+                    regions = uiState.regions,
+                    guesses = uiState.guesses,
+                    started = uiState.started,
+                    selectedRegionCode = uiState.selectedRegionCode,
+                    camera = camera,
+                    fitScale = fitScale,
+                    baseLabelSp = if (uiState.level is MapLevel.National) 9f else 13f,
+                    isNationalLevel = uiState.level is MapLevel.National,
+                    showLabelsInBrowseMode = settings.showLabelsInBrowseMode,
+                    onCanvasSizeChanged = { canvasSize = it },
+                    onTapRegion = viewModel::tapRegion,
+                    modifier = Modifier.fillMaxSize(),
+                )
 
-            if (uiState.isLoading) {
-                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                if (uiState.isLoading) {
+                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                }
             }
         }
+
+        ConfettiOverlay(trigger = lastCompletion?.completedAtMillis, modifier = Modifier.fillMaxSize())
     }
 
     uiState.selectedRegion?.let { region ->
@@ -182,9 +193,17 @@ fun MapScreen(viewModel: QuizViewModel = viewModel()) {
         )
     }
 
+    if (showHistoryDialog) {
+        HistoryDialog(
+            entries = remember(showHistoryDialog) { viewModel.loadHistory() },
+            onDismiss = { showHistoryDialog = false },
+        )
+    }
+
     if (showCompletionDialog) {
         CompletionDialog(
-            levelTitle = breadcrumb(uiState.level),
+            levelTitle = uiState.level.displayName(),
+            durationMillis = lastCompletion?.durationMillis,
             showBackToNational = uiState.level is MapLevel.Province,
             onRestart = {
                 showCompletionDialog = false
@@ -197,9 +216,4 @@ fun MapScreen(viewModel: QuizViewModel = viewModel()) {
             onDismiss = { showCompletionDialog = false },
         )
     }
-}
-
-private fun breadcrumb(level: MapLevel): String = when (level) {
-    is MapLevel.National -> "대한민국"
-    is MapLevel.Province -> level.name
 }

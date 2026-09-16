@@ -41,6 +41,11 @@ sealed class MapLevel {
     }
 }
 
+fun MapLevel.displayName(): String = when (this) {
+    is MapLevel.National -> "대한민국"
+    is MapLevel.Province -> name
+}
+
 sealed class UiEvent {
     data object WrongAnswer : UiEvent()
     data object AlreadyRevealed : UiEvent()

@@ -5,6 +5,8 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.koreageo.quiz.geo.GeoRepository
 import com.koreageo.quiz.geo.Region
+import com.koreageo.quiz.history.HistoryEntry
+import com.koreageo.quiz.history.HistoryRepository
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -31,10 +33,19 @@ data class QuizUiState(
 class QuizViewModel(application: Application) : AndroidViewModel(application) {
 
     private val repository = GeoRepository(application)
+    private val historyRepository = HistoryRepository(application)
 
     // quiz progress kept per level so it survives navigating back and forth
     private val guessesByLevel = mutableMapOf<String, Map<String, GuessState>>()
     private val startedByLevel = mutableMapOf<String, Boolean>()
+
+    // when the current 도전 run started, per level, so a completion can compute how long it took
+    private val questStartedAtByLevel = mutableMapOf<String, Long>()
+
+    private val _lastCompletion = MutableStateFlow<HistoryEntry?>(null)
+    val lastCompletion: StateFlow<HistoryEntry?> = _lastCompletion.asStateFlow()
+
+    fun loadHistory(): List<HistoryEntry> = historyRepository.loadEntries()
 
     private val _uiState = MutableStateFlow(QuizUiState())
     val uiState: StateFlow<QuizUiState> = _uiState.asStateFlow()
@@ -95,6 +106,7 @@ class QuizViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun startQuiz() {
+        questStartedAtByLevel[_uiState.value.level.key] = System.currentTimeMillis()
         _uiState.update { it.copy(started = true, guesses = emptyMap(), selectedRegionCode = null) }
         persistCurrentProgress()
     }
@@ -128,6 +140,7 @@ class QuizViewModel(application: Application) : AndroidViewModel(application) {
             updated[target.code] = (updated[target.code] ?: GuessState()).copy(revealed = true)
             _uiState.update { it.copy(guesses = updated, selectedRegionCode = null) }
             persistCurrentProgress()
+            recordCompletionIfJustFinished()
         } else {
             val current = state.guesses[target.code] ?: GuessState()
             val updated = state.guesses.toMutableMap()
@@ -164,5 +177,18 @@ class QuizViewModel(application: Application) : AndroidViewModel(application) {
         val state = _uiState.value
         guessesByLevel[state.level.key] = state.guesses
         startedByLevel[state.level.key] = state.started
+    }
+
+    private fun recordCompletionIfJustFinished() {
+        val state = _uiState.value
+        if (!state.completed) return
+        val startedAt = questStartedAtByLevel.remove(state.level.key) ?: return
+        val entry = HistoryEntry(
+            levelName = state.level.displayName(),
+            completedAtMillis = System.currentTimeMillis(),
+            durationMillis = (System.currentTimeMillis() - startedAt).coerceAtLeast(0),
+        )
+        historyRepository.addEntry(entry)
+        _lastCompletion.value = entry
     }
 }
