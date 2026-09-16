@@ -46,9 +46,10 @@ fun MapCanvas(
     val textMeasurer = rememberTextMeasurer()
     // Draw larger regions first so a smaller one that sits inside/against a bigger
     // neighbor (e.g. 서울특별시 in/against 경기도) renders on top instead of getting
-    // painted over. Palette color still comes from each region's original list index,
-    // not its draw position, so colors don't shuffle when this reorders drawing.
-    val drawOrder = remember(regions) { regions.withIndex().sortedByDescending { it.value.approxArea } }
+    // painted over.
+    val drawOrder = remember(regions) { regions.sortedByDescending { it.approxArea } }
+    // Bounding-box-adjacency-based coloring, not list position — see assignRegionColors().
+    val colorAssignment = remember(regions) { assignRegionColors(regions, REGION_PALETTE.size) }
 
     Canvas(
         modifier = modifier
@@ -76,10 +77,10 @@ fun MapCanvas(
         // below, strictly after every polygon — otherwise a region drawn later (smaller
         // regions draw last, see drawOrder above) paints its fill right over a label that
         // an earlier, larger region already drew at that screen position.
-        for ((index, region) in drawOrder) {
+        for (region in drawOrder) {
             val guess = guesses[region.code] ?: GuessState()
             val isSelected = region.code == selectedRegionCode
-            val baseColor = REGION_PALETTE[index % REGION_PALETTE.size]
+            val baseColor = REGION_PALETTE[colorAssignment[region.code] ?: 0]
             val path = Path()
             for (ring in region.rings) {
                 if (ring.isEmpty()) continue
@@ -103,7 +104,7 @@ fun MapCanvas(
         // Pass 2: measure every visible label, then push overlapping ones apart by the
         // minimum amount before drawing any of them on top of the finished polygon layer.
         val labelBoxes = ArrayList<LabelBox>(drawOrder.size)
-        for ((_, region) in drawOrder) {
+        for (region in drawOrder) {
             val guess = guesses[region.code] ?: GuessState()
             val showLabel = (!started && showLabelsInBrowseMode) || guess.revealed
             if (!showLabel) continue
