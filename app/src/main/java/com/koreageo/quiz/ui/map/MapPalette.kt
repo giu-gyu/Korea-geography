@@ -25,7 +25,7 @@ val LABEL_TEXT_COLOR = Color(0xFF1F2D2A)
 
 /** Fill-in-the-blank placeholder shown over a not-yet-answered region during a quiz. */
 val BLANK_STROKE_COLOR = Color(0xFF000000)
-val BLANK_FILL_COLOR = Color(0x33000000)
+val BLANK_FILL_COLOR = Color(0x59FFFFFF)
 
 /** The "도전" (challenge) button — deliberately loud, unlike the rest of the muted map palette. */
 val CHALLENGE_BUTTON_COLOR = Color(0xFFFF6D28)
