@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -44,10 +45,12 @@ import kotlinx.coroutines.delay
 @Composable
 fun MapScreen(viewModel: QuizViewModel = viewModel()) {
     val uiState by viewModel.uiState.collectAsState()
+    val settings by viewModel.settings.collectAsState()
     val camera = remember { CameraState() }
     var canvasSize by remember { mutableStateOf(Size.Zero) }
     var hasPlayedIntro by rememberSaveable { mutableStateOf(false) }
     var showCompletionDialog by remember(uiState.level.key) { mutableStateOf(false) }
+    var showSettingsDialog by remember { mutableStateOf(false) }
     var fitScale by remember { mutableStateOf(1f) }
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -94,6 +97,11 @@ fun MapScreen(viewModel: QuizViewModel = viewModel()) {
                         }
                     }
                 },
+                actions = {
+                    IconButton(onClick = { showSettingsDialog = true }) {
+                        Icon(Icons.Filled.Settings, contentDescription = "설정")
+                    }
+                },
             )
         },
         bottomBar = {
@@ -138,6 +146,7 @@ fun MapScreen(viewModel: QuizViewModel = viewModel()) {
                 camera = camera,
                 fitScale = fitScale,
                 baseLabelSp = if (uiState.level is MapLevel.National) 9f else 13f,
+                showLabelsInBrowseMode = settings.showLabelsInBrowseMode,
                 onCanvasSizeChanged = { canvasSize = it },
                 onTapRegion = viewModel::tapRegion,
                 modifier = Modifier.fillMaxSize(),
@@ -153,9 +162,19 @@ fun MapScreen(viewModel: QuizViewModel = viewModel()) {
         AnswerSheet(
             guess = uiState.selectedGuess,
             targetName = region.name,
+            settings = settings,
             onSubmit = viewModel::submitAnswer,
             onDismiss = viewModel::dismissAnswerSheet,
-            onRequestHint = viewModel::requestHint,
+            onRequestCharacterCountHint = viewModel::requestCharacterCountHint,
+            onRequestChoseongHint = viewModel::requestChoseongHint,
+        )
+    }
+
+    if (showSettingsDialog) {
+        SettingsDialog(
+            settings = settings,
+            onSettingsChange = viewModel::updateSettings,
+            onDismiss = { showSettingsDialog = false },
         )
     }
 

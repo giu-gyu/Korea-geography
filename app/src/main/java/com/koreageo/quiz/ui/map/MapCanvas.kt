@@ -37,6 +37,7 @@ fun MapCanvas(
     camera: CameraState,
     fitScale: Float,
     baseLabelSp: Float,
+    showLabelsInBrowseMode: Boolean,
     onCanvasSizeChanged: (Size) -> Unit,
     onTapRegion: (Region) -> Unit,
     modifier: Modifier = Modifier,
@@ -104,7 +105,7 @@ fun MapCanvas(
         val labelBoxes = ArrayList<LabelBox>(drawOrder.size)
         for ((_, region) in drawOrder) {
             val guess = guesses[region.code] ?: GuessState()
-            val showLabel = !started || guess.revealed
+            val showLabel = (!started && showLabelsInBrowseMode) || guess.revealed
             if (!showLabel) continue
 
             // Labels grow as the user zooms in past this level's default fit, and shrink

@@ -1,6 +1,5 @@
 package com.koreageo.quiz.ui.map
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -21,7 +20,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -31,14 +29,19 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.koreageo.quiz.quiz.GuessState
 import com.koreageo.quiz.quiz.HangulUtil
+import com.koreageo.quiz.quiz.QuizSettings
+import com.koreageo.quiz.quiz.characterCountHintAvailable
+import com.koreageo.quiz.quiz.choseongHintAvailable
 
 @Composable
 fun AnswerSheet(
     guess: GuessState,
     targetName: String,
+    settings: QuizSettings,
     onSubmit: (String) -> Unit,
     onDismiss: () -> Unit,
-    onRequestHint: () -> Unit,
+    onRequestCharacterCountHint: () -> Unit,
+    onRequestChoseongHint: () -> Unit,
 ) {
     var answer by remember(guess) { mutableStateOf("") }
 
@@ -75,10 +78,19 @@ fun AnswerSheet(
                     )
                 }
 
-                if (guess.hintShown) {
+                if (guess.characterCountHintShown) {
                     Spacer(Modifier.height(8.dp))
                     Text(
-                        text = "힌트: ${HangulUtil.choseong(targetName)}",
+                        text = "글자수 힌트: ${targetName.length}글자",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Bold,
+                    )
+                }
+
+                if (guess.choseongHintShown) {
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        text = "초성 힌트: ${HangulUtil.choseong(targetName)}",
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Bold,
                     )
@@ -91,9 +103,13 @@ fun AnswerSheet(
                 ) {
                     TextButton(onClick = onDismiss) { Text("취소") }
                     Row {
-                        if (guess.hintAvailable && !guess.hintShown) {
-                            TextButton(onClick = onRequestHint) { Text("힌트") }
-                            Spacer(Modifier.width(8.dp))
+                        if (guess.characterCountHintAvailable(settings) && !guess.characterCountHintShown) {
+                            TextButton(onClick = onRequestCharacterCountHint) { Text("글자수 힌트") }
+                            Spacer(Modifier.width(4.dp))
+                        }
+                        if (guess.choseongHintAvailable(settings) && !guess.choseongHintShown) {
+                            TextButton(onClick = onRequestChoseongHint) { Text("초성 힌트") }
+                            Spacer(Modifier.width(4.dp))
                         }
                         Button(
                             onClick = { if (answer.isNotBlank()) onSubmit(answer) },

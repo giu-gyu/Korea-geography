@@ -1,15 +1,27 @@
 package com.koreageo.quiz.quiz
 
-/** How many wrong guesses before the "힌트" (hint) button appears. */
-const val WRONG_GUESSES_BEFORE_HINT = 3
-
 data class GuessState(
     val revealed: Boolean = false,
     val wrongCount: Int = 0,
-    val hintShown: Boolean = false,
-) {
-    val hintAvailable: Boolean get() = wrongCount >= WRONG_GUESSES_BEFORE_HINT
-}
+    val characterCountHintShown: Boolean = false,
+    val choseongHintShown: Boolean = false,
+)
+
+/**
+ * User-configurable hint behavior. A threshold of 0 means that hint is turned off entirely;
+ * 1-4 is the number of wrong guesses needed before its button appears.
+ */
+data class QuizSettings(
+    val showLabelsInBrowseMode: Boolean = true,
+    val characterCountHintThreshold: Int = 0,
+    val choseongHintThreshold: Int = 3,
+)
+
+fun GuessState.characterCountHintAvailable(settings: QuizSettings): Boolean =
+    settings.characterCountHintThreshold > 0 && wrongCount >= settings.characterCountHintThreshold
+
+fun GuessState.choseongHintAvailable(settings: QuizSettings): Boolean =
+    settings.choseongHintThreshold > 0 && wrongCount >= settings.choseongHintThreshold
 
 sealed class MapLevel {
     /** Stable key used to keep per-level quiz progress separate. */

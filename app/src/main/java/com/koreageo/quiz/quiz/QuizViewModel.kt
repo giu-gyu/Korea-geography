@@ -42,6 +42,13 @@ class QuizViewModel(application: Application) : AndroidViewModel(application) {
     private val _events = MutableSharedFlow<UiEvent>(extraBufferCapacity = 4)
     val events: SharedFlow<UiEvent> = _events
 
+    private val _settings = MutableStateFlow(QuizSettings())
+    val settings: StateFlow<QuizSettings> = _settings.asStateFlow()
+
+    fun updateSettings(newSettings: QuizSettings) {
+        _settings.value = newSettings
+    }
+
     init {
         loadNational()
     }
@@ -131,13 +138,24 @@ class QuizViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun requestHint() {
+    fun requestCharacterCountHint() {
         val state = _uiState.value
         val target = state.selectedRegion ?: return
         val current = state.guesses[target.code] ?: return
-        if (!current.hintAvailable) return
+        if (!current.characterCountHintAvailable(_settings.value)) return
         val updated = state.guesses.toMutableMap()
-        updated[target.code] = current.copy(hintShown = true)
+        updated[target.code] = current.copy(characterCountHintShown = true)
+        _uiState.update { it.copy(guesses = updated) }
+        persistCurrentProgress()
+    }
+
+    fun requestChoseongHint() {
+        val state = _uiState.value
+        val target = state.selectedRegion ?: return
+        val current = state.guesses[target.code] ?: return
+        if (!current.choseongHintAvailable(_settings.value)) return
+        val updated = state.guesses.toMutableMap()
+        updated[target.code] = current.copy(choseongHintShown = true)
         _uiState.update { it.copy(guesses = updated) }
         persistCurrentProgress()
     }
