@@ -147,9 +147,9 @@ fun MapScreen(viewModel: QuizViewModel = viewModel()) {
                                     style = MaterialTheme.typography.bodyLarge,
                                 )
                                 OutlinedButton(
-                                    onClick = viewModel::startQuiz,
+                                    onClick = viewModel::stopHere,
                                     modifier = Modifier.align(Alignment.CenterEnd),
-                                ) { Text("다시 시작") }
+                                ) { Text("여기까지") }
                             }
                         }
                     }

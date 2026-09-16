@@ -159,6 +159,26 @@ class QuizViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    /** Ends the current run early (the "여기까지" button) and logs the partial result to history. */
+    fun stopHere() {
+        val state = _uiState.value
+        val startedAt = questStartedAtByLevel.remove(state.level.key)
+        if (startedAt != null) {
+            val entry = HistoryEntry(
+                levelName = state.level.displayName(),
+                completedAtMillis = System.currentTimeMillis(),
+                durationMillis = (System.currentTimeMillis() - startedAt).coerceAtLeast(0),
+                revealedCount = state.revealedCount,
+                totalCount = state.regions.size,
+            )
+            historyRepository.addEntry(entry)
+            // No _lastCompletion update here — that would wrongly fire the completion
+            // celebration/confetti for a run that wasn't actually finished.
+        }
+        _uiState.update { it.copy(started = false, guesses = emptyMap(), selectedRegionCode = null) }
+        persistCurrentProgress()
+    }
+
     private fun persistCurrentProgress() {
         val state = _uiState.value
         guessesByLevel[state.level.key] = state.guesses
@@ -173,6 +193,8 @@ class QuizViewModel(application: Application) : AndroidViewModel(application) {
             levelName = state.level.displayName(),
             completedAtMillis = System.currentTimeMillis(),
             durationMillis = (System.currentTimeMillis() - startedAt).coerceAtLeast(0),
+            revealedCount = state.revealedCount,
+            totalCount = state.regions.size,
         )
         historyRepository.addEntry(entry)
         _lastCompletion.value = entry

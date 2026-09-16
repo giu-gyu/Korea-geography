@@ -70,7 +70,11 @@ private fun HistoryRow(entry: HistoryEntry) {
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
         Column {
-            Text(entry.levelName, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
+            Text(
+                text = "${entry.levelName} ${entry.revealedCount}/${entry.totalCount}",
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.SemiBold,
+            )
             Text(
                 text = formatTimestamp(entry.completedAtMillis),
                 style = MaterialTheme.typography.bodySmall,

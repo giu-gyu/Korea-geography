@@ -19,6 +19,8 @@ class HistoryRepository(context: Context) {
                     levelName = obj.getString("levelName"),
                     completedAtMillis = obj.getLong("completedAtMillis"),
                     durationMillis = obj.getLong("durationMillis"),
+                    revealedCount = obj.optInt("revealedCount", 0),
+                    totalCount = obj.optInt("totalCount", 0),
                 ),
             )
         }
@@ -37,7 +39,9 @@ class HistoryRepository(context: Context) {
                 JSONObject()
                     .put("levelName", e.levelName)
                     .put("completedAtMillis", e.completedAtMillis)
-                    .put("durationMillis", e.durationMillis),
+                    .put("durationMillis", e.durationMillis)
+                    .put("revealedCount", e.revealedCount)
+                    .put("totalCount", e.totalCount),
             )
         }
         prefs.edit().putString(KEY_ENTRIES, array.toString()).apply()
