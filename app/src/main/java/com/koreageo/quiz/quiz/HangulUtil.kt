@@ -53,6 +53,12 @@ fun isCorrectAnswer(input: String, correctName: String): Boolean {
     val normalizedInput = normalizeAnswer(input)
     if (normalizedInput.isEmpty()) return false
     if (normalizedInput == correctName) return true
+
+    // 자치구(강남구, 서초구, 남구 등)는 "구"를 뗀 이름("강남", "서초", "남")도 정답으로 인정한다.
+    if (correctName.length > 1 && correctName.endsWith("구") && normalizedInput == correctName.dropLast(1)) {
+        return true
+    }
+
     val aliases = PROVINCE_ALIASES[correctName] ?: return false
     return normalizedInput in aliases
 }
