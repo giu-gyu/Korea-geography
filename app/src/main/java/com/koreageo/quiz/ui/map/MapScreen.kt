@@ -56,6 +56,7 @@ fun MapScreen(viewModel: QuizViewModel = viewModel()) {
     var showSettingsDialog by remember { mutableStateOf(false) }
     var showHistoryDialog by remember { mutableStateOf(false) }
     var fitScale by remember { mutableStateOf(1f) }
+    var remainingMessage by remember { mutableStateOf<String?>(null) }
     val snackbarHostState = remember { SnackbarHostState() }
 
     // 도(道) 화면에서 시스템 뒤로가기를 누르면 앱을 나가지 말고 전국 화면으로 이동한다.
@@ -83,12 +84,14 @@ fun MapScreen(viewModel: QuizViewModel = viewModel()) {
         if (uiState.completed) showCompletionDialog = true
     }
 
-    // 얼마 안 남았을 때(3개 이하) 살짝 알려준다.
+    // 얼마 안 남았을 때(3개 이하) 화면 중앙 위쪽에 살짝 알려준다.
     LaunchedEffect(uiState.revealedCount, uiState.started, uiState.level.key) {
         if (!uiState.started) return@LaunchedEffect
         val remaining = uiState.regions.size - uiState.revealedCount
         if (remaining in 1..3) {
-            snackbarHostState.showSnackbar("${remaining}개 남았습니다")
+            remainingMessage = "${remaining}개 남았습니다"
+            delay(1500)
+            remainingMessage = null
         }
     }
 
@@ -180,6 +183,13 @@ fun MapScreen(viewModel: QuizViewModel = viewModel()) {
         }
 
         ConfettiOverlay(trigger = lastCompletion?.completedAtMillis, modifier = Modifier.fillMaxSize())
+
+        RemainingBanner(
+            message = remainingMessage,
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .padding(top = 110.dp),
+        )
     }
 
     uiState.selectedRegion?.let { region ->
