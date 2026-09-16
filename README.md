@@ -5,10 +5,10 @@ divisions: 광역자치단체(17개 시/도) → 시/군/구(229개).
 
 ## How it works
 
-1. App opens on a 2D vector map of Korea, camera starting zoomed in near the
-   south and animating out to frame the whole country (the "3D fly-out" effect
-   from the spec, done with a Compose `Animatable` camera rather than a real
-   3D engine — see "Design notes" below for why).
+1. App opens on a 2D vector map of Korea, camera starting zoomed in on the
+   country's center and animating out to frame the whole country (the "3D
+   fly-out" effect from the spec, done with a Compose `Animatable` camera
+   rather than a real 3D engine — see "Design notes" below for why).
 2. Tap a province to fly the camera into it and switch to its city/county
    subdivisions.
 3. Press **시작** to hide all labels and start the quiz. Tap any region, type

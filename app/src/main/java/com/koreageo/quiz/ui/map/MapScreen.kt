@@ -58,7 +58,7 @@ fun MapScreen(viewModel: QuizViewModel = viewModel()) {
         fitScale = target.scale
         if (uiState.level is MapLevel.National && !hasPlayedIntro) {
             hasPlayedIntro = true
-            val startBounds = zoomedBounds(bounds, factor = 0.12f, verticalAnchor = 0.9f)
+            val startBounds = zoomedBounds(bounds, factor = 0.12f, verticalAnchor = 0.5f)
             camera.snapToImmediate(fitTransform(startBounds, canvasSize, paddingFraction = 0f))
             delay(200)
             camera.animateTo(target, tween(1100, easing = FastOutSlowInEasing))
