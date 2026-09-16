@@ -186,7 +186,7 @@ class QuizViewModel(application: Application) : AndroidViewModel(application) {
         val state = _uiState.value
         val target = state.selectedRegion ?: return
         val current = state.guesses[target.code] ?: return
-        if (!current.characterCountHintAvailable(_settings.value)) return
+        if (current.characterCountHintShown) return
         val updated = state.guesses.toMutableMap()
         updated[target.code] = current.copy(characterCountHintShown = true)
         _uiState.update { it.copy(guesses = updated) }
@@ -197,7 +197,7 @@ class QuizViewModel(application: Application) : AndroidViewModel(application) {
         val state = _uiState.value
         val target = state.selectedRegion ?: return
         val current = state.guesses[target.code] ?: return
-        if (!current.choseongHintAvailable(_settings.value)) return
+        if (current.choseongHintShown) return
         val updated = state.guesses.toMutableMap()
         updated[target.code] = current.copy(choseongHintShown = true)
         _uiState.update { it.copy(guesses = updated) }

@@ -7,26 +7,10 @@ data class GuessState(
     val choseongHintShown: Boolean = false,
 )
 
-/**
- * User-configurable hint behavior. `null` means that hint is turned off entirely (the "X"
- * option); 0 means it's shown immediately with no wrong guesses needed; 1-4 is the number of
- * wrong guesses required before it's automatically shown.
- */
+/** Whether region names show while browsing (before 도전) — toggled directly from the top bar. */
 data class QuizSettings(
     val showLabelsInBrowseMode: Boolean = true,
-    val characterCountHintThreshold: Int? = 1,
-    val choseongHintThreshold: Int? = 3,
 )
-
-fun GuessState.characterCountHintAvailable(settings: QuizSettings): Boolean {
-    val threshold = settings.characterCountHintThreshold ?: return false
-    return wrongCount >= threshold
-}
-
-fun GuessState.choseongHintAvailable(settings: QuizSettings): Boolean {
-    val threshold = settings.choseongHintThreshold ?: return false
-    return wrongCount >= threshold
-}
 
 sealed class MapLevel {
     /** Stable key used to keep per-level quiz progress separate. */

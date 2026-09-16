@@ -15,12 +15,14 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.History
-import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconToggleButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
@@ -60,7 +62,6 @@ fun MapScreen(viewModel: QuizViewModel = viewModel()) {
     var canvasSize by remember { mutableStateOf(Size.Zero) }
     var hasPlayedIntro by rememberSaveable { mutableStateOf(false) }
     var showCompletionDialog by remember(uiState.level.key) { mutableStateOf(false) }
-    var showSettingsDialog by remember { mutableStateOf(false) }
     var showHistoryDialog by remember { mutableStateOf(false) }
     var fitScale by remember { mutableStateOf(1f) }
     var remainingMessage by remember { mutableStateOf<String?>(null) }
@@ -144,8 +145,18 @@ fun MapScreen(viewModel: QuizViewModel = viewModel()) {
                         IconButton(onClick = { showHistoryDialog = true }) {
                             Icon(Icons.Filled.History, contentDescription = "기록")
                         }
-                        IconButton(onClick = { showSettingsDialog = true }) {
-                            Icon(Icons.Filled.Settings, contentDescription = "설정")
+                        // 활성화(체크) 상태 = 지역 이름을 숨김. 도전이 진행 중일 때는 이 토글이
+                        // 아무 효과가 없으므로(빈칸/정답이 대신 표시 여부를 결정) 비활성화해서
+                        // 지금은 켤 수 없다는 걸 보여준다.
+                        IconToggleButton(
+                            checked = !settings.showLabelsInBrowseMode,
+                            onCheckedChange = { hide -> viewModel.updateSettings(settings.copy(showLabelsInBrowseMode = !hide)) },
+                            enabled = !uiState.started,
+                        ) {
+                            Icon(
+                                if (settings.showLabelsInBrowseMode) Icons.Filled.Visibility else Icons.Filled.VisibilityOff,
+                                contentDescription = if (settings.showLabelsInBrowseMode) "지역 이름 숨기기" else "지역 이름 보이기",
+                            )
                         }
                     },
                 )
@@ -226,19 +237,10 @@ fun MapScreen(viewModel: QuizViewModel = viewModel()) {
         AnswerSheet(
             guess = uiState.selectedGuess,
             targetName = region.name,
-            settings = settings,
             onSubmit = viewModel::submitAnswer,
             onDismiss = viewModel::dismissAnswerSheet,
             onRequestCharacterCountHint = viewModel::requestCharacterCountHint,
             onRequestChoseongHint = viewModel::requestChoseongHint,
-        )
-    }
-
-    if (showSettingsDialog) {
-        SettingsDialog(
-            settings = settings,
-            onSettingsChange = viewModel::updateSettings,
-            onDismiss = { showSettingsDialog = false },
         )
     }
 

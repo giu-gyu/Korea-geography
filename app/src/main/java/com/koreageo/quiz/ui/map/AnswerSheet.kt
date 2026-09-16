@@ -38,9 +38,6 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.koreageo.quiz.quiz.GuessState
 import com.koreageo.quiz.quiz.HangulUtil
-import com.koreageo.quiz.quiz.QuizSettings
-import com.koreageo.quiz.quiz.characterCountHintAvailable
-import com.koreageo.quiz.quiz.choseongHintAvailable
 import com.koreageo.quiz.quiz.isCorrectAnswer
 
 private val ANSWER_ACCENT_COLOR = CHALLENGE_BUTTON_COLOR
@@ -49,7 +46,6 @@ private val ANSWER_ACCENT_COLOR = CHALLENGE_BUTTON_COLOR
 fun AnswerSheet(
     guess: GuessState,
     targetName: String,
-    settings: QuizSettings,
     onSubmit: (String) -> Unit,
     onDismiss: () -> Unit,
     onRequestCharacterCountHint: () -> Unit,
@@ -145,11 +141,11 @@ fun AnswerSheet(
                     ) {
                         TextButton(onClick = onDismiss) { Text("취소") }
                         Row {
-                            if (guess.characterCountHintAvailable(settings) && !guess.characterCountHintShown) {
+                            if (!guess.characterCountHintShown) {
                                 TextButton(onClick = onRequestCharacterCountHint) { Text("글자수 힌트") }
                                 Spacer(Modifier.width(4.dp))
                             }
-                            if (guess.choseongHintAvailable(settings) && !guess.choseongHintShown) {
+                            if (!guess.choseongHintShown) {
                                 TextButton(onClick = onRequestChoseongHint) { Text("초성 힌트") }
                             }
                         }
