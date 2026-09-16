@@ -113,15 +113,21 @@ class QuizViewModel(application: Application) : AndroidViewModel(application) {
 
     fun tapRegion(region: Region) {
         val state = _uiState.value
-        if (!state.started) {
-            if (state.level is MapLevel.National) {
-                selectProvince(region)
-            } else {
-                _events.tryEmit(UiEvent.DrillNotAvailableYet)
-            }
+        val alreadyRevealed = state.guesses[region.code]?.revealed == true
+
+        // 전국 화면에서는 아직 도전을 시작하지 않았거나 그 지역을 이미 맞혔다면 —
+        // 더 맞힐 게 없으니 — 탭으로 그 도/시 안으로 들어간다. 도전 중인데 아직
+        // 안 맞힌 지역만 정답 입력 대상이 된다.
+        if (state.level is MapLevel.National && (!state.started || alreadyRevealed)) {
+            selectProvince(region)
             return
         }
-        if (state.guesses[region.code]?.revealed == true) {
+
+        if (!state.started) {
+            _events.tryEmit(UiEvent.DrillNotAvailableYet)
+            return
+        }
+        if (alreadyRevealed) {
             _events.tryEmit(UiEvent.AlreadyRevealed)
             return
         }
