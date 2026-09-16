@@ -49,6 +49,21 @@ fun unionBounds(regions: List<Region>): Rect {
     return Rect(left, top, right, bottom)
 }
 
+/**
+ * A transform that centers on [region] at a reasonable zoom for picking it out and answering
+ * it — fit to its own bounds like [fitTransform], but with generous padding so neighbors stay
+ * visible for context, and clamped relative to [fitScale] so a tiny region (e.g. 서울특별시 at
+ * the national level) doesn't zoom in absurdly far.
+ */
+fun focusTransform(region: Region, canvasSize: Size, fitScale: Float): Transform {
+    val raw = fitTransform(region.bounds, canvasSize, paddingFraction = 1.2f)
+    val scale = raw.scale.coerceIn(fitScale * 0.9f, fitScale * 8f)
+    val center = region.centroid
+    val tx = canvasSize.width / 2f - center.x * scale
+    val ty = canvasSize.height / 2f - center.y * scale
+    return Transform(scale, tx, ty)
+}
+
 /** Shrinks [bounds] toward the given vertical anchor (0 = top, 1 = bottom), used for the intro fly-in. */
 fun zoomedBounds(bounds: Rect, factor: Float, verticalAnchor: Float): Rect {
     val newWidth = bounds.width * factor

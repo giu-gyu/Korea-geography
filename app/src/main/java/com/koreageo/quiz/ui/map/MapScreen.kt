@@ -4,16 +4,21 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -30,6 +35,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -42,6 +48,7 @@ import com.koreageo.quiz.quiz.QuizViewModel
 import com.koreageo.quiz.quiz.UiEvent
 import com.koreageo.quiz.quiz.displayName
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -57,7 +64,19 @@ fun MapScreen(viewModel: QuizViewModel = viewModel()) {
     var showHistoryDialog by remember { mutableStateOf(false) }
     var fitScale by remember { mutableStateOf(1f) }
     var remainingMessage by remember { mutableStateOf<String?>(null) }
+    var nextBlankCursor by remember(uiState.level.key) { mutableStateOf(0) }
     val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+
+    val goToNextBlank: () -> Unit = {
+        val unrevealed = uiState.regions.filter { uiState.guesses[it.code]?.revealed != true }
+        if (unrevealed.isNotEmpty()) {
+            val target = unrevealed[nextBlankCursor % unrevealed.size]
+            nextBlankCursor++
+            viewModel.tapRegion(target)
+            scope.launch { camera.animateTo(focusTransform(target, canvasSize, fitScale)) }
+        }
+    }
 
     // 도(道) 화면에서 시스템 뒤로가기를 누르면 앱을 나가지 말고 전국 화면으로 이동한다.
     BackHandler(enabled = uiState.level is MapLevel.Province) {
@@ -181,6 +200,15 @@ fun MapScreen(viewModel: QuizViewModel = viewModel()) {
                 if (uiState.isLoading) {
                     CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
                 }
+
+                if (uiState.started) {
+                    NextBlankButton(
+                        onClick = goToNextBlank,
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(12.dp),
+                    )
+                }
             }
         }
 
@@ -240,5 +268,18 @@ fun MapScreen(viewModel: QuizViewModel = viewModel()) {
             },
             onDismiss = { showCompletionDialog = false },
         )
+    }
+}
+
+@Composable
+private fun NextBlankButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
+    FilledTonalButton(onClick = onClick, modifier = modifier) {
+        Icon(
+            Icons.AutoMirrored.Filled.ArrowForward,
+            contentDescription = null,
+            modifier = Modifier.size(18.dp),
+        )
+        Spacer(Modifier.width(6.dp))
+        Text("다음 빈칸")
     }
 }

@@ -37,6 +37,9 @@ import com.koreageo.quiz.quiz.GuessState
 import kotlin.math.sqrt
 import kotlinx.coroutines.launch
 
+/** Blanks are all sized to this reference string's width, not the real answer's length. */
+private const val BLANK_SIZE_REFERENCE = "가나다라"
+
 @Composable
 fun MapCanvas(
     regions: List<Region>,
@@ -160,8 +163,10 @@ fun MapCanvas(
             val fontSizeSp = (baseLabelSp * sqrt(zoomRatio)).coerceIn(baseLabelSp * 0.6f, baseLabelSp * 3f)
             // 광역자치단체(시/도) 이름은 진하고 이탤릭체로, 그 아래 시/군/구 이름은
             // 보통 굵기로 그려서 지도만 보고도 어느 행정 단계인지 구분되게 한다.
+            // 빈칸일 때는 실제 이름 대신 4글자 기준폭으로 재서, 빈칸 크기만 보고 글자수를
+            // 짐작할 수 없게 모든 빈칸을 같은 크기로 맞춘다.
             val layout = textMeasurer.measure(
-                text = region.name,
+                text = if (showBlank) BLANK_SIZE_REFERENCE else region.name,
                 style = if (isNationalLevel) {
                     TextStyle(
                         color = LABEL_TEXT_COLOR,
@@ -199,7 +204,7 @@ fun MapCanvas(
                     topLeft = topLeft,
                     size = size,
                     cornerRadius = cornerRadius,
-                    style = Stroke(width = 1.5f),
+                    style = Stroke(width = 2.5f),
                 )
             } else {
                 drawText(
