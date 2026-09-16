@@ -70,16 +70,15 @@ fun MapCanvas(
             },
     ) {
         val transform = camera.current
+
+        // Pass 1: fill + stroke every polygon first. Labels are drawn in a separate pass
+        // below, strictly after every polygon — otherwise a region drawn later (smaller
+        // regions draw last, see drawOrder above) paints its fill right over a label that
+        // an earlier, larger region already drew at that screen position.
         for ((index, region) in drawOrder) {
             val guess = guesses[region.code] ?: GuessState()
             val isSelected = region.code == selectedRegionCode
             val baseColor = REGION_PALETTE[index % REGION_PALETTE.size]
-            val fillColor = if (guess.revealed) {
-                lighten(baseColor, REGION_REVEALED_FILL_BOOST)
-            } else {
-                baseColor
-            }
-
             val path = Path()
             for (ring in region.rings) {
                 if (ring.isEmpty()) continue
@@ -91,39 +90,48 @@ fun MapCanvas(
                 }
                 path.close()
             }
-
+            val fillColor = if (guess.revealed) lighten(baseColor, REGION_REVEALED_FILL_BOOST) else baseColor
             drawPath(path, color = fillColor, style = Fill)
             drawPath(
                 path,
                 color = if (isSelected) REGION_SELECTED_STROKE else REGION_STROKE,
                 style = Stroke(width = if (isSelected) 4f else 1.5f),
             )
+        }
 
+        // Pass 2: measure every visible label, then push overlapping ones apart by the
+        // minimum amount before drawing any of them on top of the finished polygon layer.
+        val labelBoxes = ArrayList<LabelBox>(drawOrder.size)
+        for ((_, region) in drawOrder) {
+            val guess = guesses[region.code] ?: GuessState()
             val showLabel = !started || guess.revealed
-            if (showLabel) {
-                val labelPoint = transform.worldToScreen(labelAnchor(region))
-                // Labels grow as the user zooms in past this level's default fit, and shrink
-                // (down to a floor) when zoomed out — sqrt-damped so screen distance between
-                // neighboring labels grows faster than the text itself, easing overlap.
-                val zoomRatio = (transform.scale / fitScale).coerceAtLeast(0.05f)
-                val fontSizeSp = (baseLabelSp * sqrt(zoomRatio)).coerceIn(baseLabelSp * 0.6f, baseLabelSp * 3f)
-                val layout = textMeasurer.measure(
-                    text = region.name,
-                    style = TextStyle(
-                        color = LABEL_TEXT_COLOR,
-                        fontSize = fontSizeSp.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        textAlign = TextAlign.Center,
-                    ),
-                )
-                drawText(
-                    layout,
-                    topLeft = Offset(
-                        labelPoint.x - layout.size.width / 2f,
-                        labelPoint.y - layout.size.height / 2f,
-                    ),
-                )
-            }
+            if (!showLabel) continue
+
+            // Labels grow as the user zooms in past this level's default fit, and shrink
+            // (down to a floor) when zoomed out — sqrt-damped so screen distance between
+            // neighboring labels grows faster than the text itself, easing overlap.
+            val zoomRatio = (transform.scale / fitScale).coerceAtLeast(0.05f)
+            val fontSizeSp = (baseLabelSp * sqrt(zoomRatio)).coerceIn(baseLabelSp * 0.6f, baseLabelSp * 3f)
+            val layout = textMeasurer.measure(
+                text = region.name,
+                style = TextStyle(
+                    color = LABEL_TEXT_COLOR,
+                    fontSize = fontSizeSp.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    textAlign = TextAlign.Center,
+                ),
+            )
+            val anchor = transform.worldToScreen(region.centroid)
+            labelBoxes.add(LabelBox(layout, anchor.x, anchor.y))
+        }
+
+        resolveLabelOverlaps(labelBoxes)
+
+        for (box in labelBoxes) {
+            drawText(
+                box.layout,
+                topLeft = Offset(box.cx - box.halfWidth, box.cy - box.halfHeight),
+            )
         }
     }
 }
