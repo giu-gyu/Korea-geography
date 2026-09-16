@@ -30,3 +30,7 @@ val BLANK_STROKE_COLOR = Color(0xFF8A9A96)
 /** The "도전" (challenge) button — deliberately loud, unlike the rest of the muted map palette. */
 val CHALLENGE_BUTTON_COLOR = Color(0xFFFF6D28)
 val CHALLENGE_BUTTON_CONTENT_COLOR = Color(0xFFFFFFFF)
+
+/** Brief highlight flashed over whichever region a tap actually resolved to. */
+val TAP_FLASH_FILL_COLOR = Color(0xFFFFF176)
+val TAP_FLASH_STROKE_COLOR = Color(0xFFFFA000)

@@ -1,11 +1,16 @@
 package com.koreageo.quiz.ui.map
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
@@ -49,6 +54,11 @@ fun MapCanvas(
 ) {
     val scope = rememberCoroutineScope()
     val textMeasurer = rememberTextMeasurer()
+    // Briefly highlights whichever region a tap actually resolved to, so it's obvious which of
+    // several close/overlapping regions (e.g. 서울특별시/인천광역시/경기도) got picked, even when
+    // the tap leads straight into navigating away rather than opening the answer sheet.
+    var flashRegionCode by remember { mutableStateOf<String?>(null) }
+    val flashAlpha = remember { Animatable(0f) }
     // Draw larger regions first so a smaller one that sits inside/against a bigger
     // neighbor (e.g. 서울특별시 in/against 경기도) renders on top instead of getting
     // painted over.
@@ -62,7 +72,13 @@ fun MapCanvas(
             .pointerInput(regions) {
                 detectTapGestures { screenPoint ->
                     val worldPoint = camera.current.screenToWorld(screenPoint)
-                    regions.hitTest(worldPoint)?.let(onTapRegion)
+                    val hit = regions.hitTest(worldPoint) ?: return@detectTapGestures
+                    flashRegionCode = hit.code
+                    scope.launch {
+                        flashAlpha.snapTo(1f)
+                        flashAlpha.animateTo(0f, tween(500))
+                    }
+                    onTapRegion(hit)
                 }
             }
             .pointerInput(fitScale) {
@@ -104,6 +120,11 @@ fun MapCanvas(
                 color = if (isSelected) REGION_SELECTED_STROKE else REGION_STROKE,
                 style = Stroke(width = if (isSelected) 4f else 1.5f),
             )
+
+            if (region.code == flashRegionCode && flashAlpha.value > 0f) {
+                drawPath(path, color = TAP_FLASH_FILL_COLOR.copy(alpha = flashAlpha.value * 0.55f), style = Fill)
+                drawPath(path, color = TAP_FLASH_STROKE_COLOR.copy(alpha = flashAlpha.value), style = Stroke(width = 5f))
+            }
         }
 
         // Pass 2: measure every visible label, then push overlapping ones apart by the
