@@ -62,7 +62,7 @@ fun MapCanvas(
                 detectTransformGestures { centroid, pan, zoom, _ ->
                     scope.launch {
                         if (zoom != 1f) {
-                            camera.zoomBy(zoom, centroid, minScale = fitScale * 0.5f, maxScale = fitScale * 8f)
+                            camera.zoomBy(zoom, centroid, minScale = fitScale * 0.85f, maxScale = fitScale * 8f)
                         }
                         if (pan != Offset.Zero) camera.panBy(pan.x, pan.y)
                     }
