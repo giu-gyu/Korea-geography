@@ -196,6 +196,6 @@ fun MapScreen(viewModel: QuizViewModel = viewModel()) {
 }
 
 private fun breadcrumb(level: MapLevel): String = when (level) {
-    is MapLevel.National -> "대한민국 (광역자치단체)"
+    is MapLevel.National -> "대한민국"
     is MapLevel.Province -> level.name
 }
