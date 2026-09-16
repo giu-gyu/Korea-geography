@@ -4,6 +4,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -42,6 +43,11 @@ fun MapCanvas(
 ) {
     val scope = rememberCoroutineScope()
     val textMeasurer = rememberTextMeasurer()
+    // Draw larger regions first so a smaller one that sits inside/against a bigger
+    // neighbor (e.g. 서울특별시 in/against 경기도) renders on top instead of getting
+    // painted over. Palette color still comes from each region's original list index,
+    // not its draw position, so colors don't shuffle when this reorders drawing.
+    val drawOrder = remember(regions) { regions.withIndex().sortedByDescending { it.value.approxArea } }
 
     Canvas(
         modifier = modifier
@@ -64,7 +70,7 @@ fun MapCanvas(
             },
     ) {
         val transform = camera.current
-        regions.forEachIndexed { index, region ->
+        for ((index, region) in drawOrder) {
             val guess = guesses[region.code] ?: GuessState()
             val isSelected = region.code == selectedRegionCode
             val baseColor = REGION_PALETTE[index % REGION_PALETTE.size]

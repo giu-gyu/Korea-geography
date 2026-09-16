@@ -2,9 +2,14 @@ package com.koreageo.quiz.geo
 
 import androidx.compose.ui.geometry.Offset
 
-/** Finds which region (if any) contains [point], in world units. */
+/**
+ * Finds which region (if any) contains [point], in world units. Smaller regions are tested
+ * first so a tap in a spot where a small region sits inside/against a larger one (e.g.
+ * 서울특별시 against 경기도) matches the one drawn on top, not whichever happens to come
+ * first in the source list.
+ */
 fun List<Region>.hitTest(point: Offset): Region? {
-    for (region in this) {
+    for (region in this.sortedBy { it.approxArea }) {
         val b = region.bounds
         if (point.x < b.left || point.x > b.right || point.y < b.top || point.y > b.bottom) continue
         for (ring in region.rings) {
