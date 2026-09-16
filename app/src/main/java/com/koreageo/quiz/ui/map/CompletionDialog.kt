@@ -32,12 +32,16 @@ import androidx.compose.ui.window.Dialog
 @Composable
 fun CompletionDialog(
     levelTitle: String,
+    revealedCount: Int,
+    totalCount: Int,
     durationMillis: Long?,
     showBackToNational: Boolean,
     onRestart: () -> Unit,
     onBackToNational: () -> Unit,
     onDismiss: () -> Unit,
 ) {
+    val isFullCompletion = totalCount > 0 && revealedCount == totalCount
+
     val scale = remember { Animatable(0.6f) }
     LaunchedEffect(Unit) {
         scale.animateTo(
@@ -56,16 +60,20 @@ fun CompletionDialog(
                 modifier = Modifier.padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                Text(text = "🎉", fontSize = 48.sp)
+                Text(text = if (isFullCompletion) "🎉" else "👏", fontSize = 48.sp)
                 Spacer(Modifier.height(8.dp))
                 Text(
-                    text = "축하합니다!",
+                    text = if (isFullCompletion) "축하합니다!" else "수고하셨습니다!",
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.ExtraBold,
                 )
                 Spacer(Modifier.height(8.dp))
                 Text(
-                    text = "${levelTitle}의 모든 지역을 맞혔습니다!",
+                    text = if (isFullCompletion) {
+                        "${levelTitle}의 모든 지역을 맞혔습니다!"
+                    } else {
+                        "${levelTitle}에서 ${revealedCount}/${totalCount}개를 맞혔습니다!"
+                    },
                     style = MaterialTheme.typography.bodyLarge,
                     textAlign = TextAlign.Center,
                 )

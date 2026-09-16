@@ -33,6 +33,15 @@ class HistoryRepository(context: Context) {
         if (entries.size > MAX_ENTRIES) {
             entries.subList(MAX_ENTRIES, entries.size).clear()
         }
+        saveEntries(entries)
+    }
+
+    /** [completedAtMillis] doubles as each entry's id — two entries can't share a timestamp. */
+    fun deleteEntry(completedAtMillis: Long) {
+        saveEntries(loadEntries().filterNot { it.completedAtMillis == completedAtMillis })
+    }
+
+    private fun saveEntries(entries: List<HistoryEntry>) {
         val array = JSONArray()
         for (e in entries) {
             array.put(

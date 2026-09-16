@@ -80,8 +80,10 @@ fun MapScreen(viewModel: QuizViewModel = viewModel()) {
         }
     }
 
-    LaunchedEffect(uiState.completed) {
-        if (uiState.completed) showCompletionDialog = true
+    // 전체 완료든, "여기까지"로 1개 이상 맞히고 조기 종료든, lastCompletion이 새로
+    // 갱신될 때마다 결과 다이얼로그를 띄운다.
+    LaunchedEffect(lastCompletion?.completedAtMillis) {
+        if (lastCompletion != null) showCompletionDialog = true
     }
 
     // 얼마 안 남았을 때(3개 이하) 화면 중앙 위쪽에 살짝 알려준다.
@@ -215,14 +217,18 @@ fun MapScreen(viewModel: QuizViewModel = viewModel()) {
     if (showHistoryDialog) {
         HistoryDialog(
             entries = remember(showHistoryDialog) { viewModel.loadHistory() },
+            onDeleteEntry = viewModel::deleteHistoryEntry,
             onDismiss = { showHistoryDialog = false },
         )
     }
 
-    if (showCompletionDialog) {
+    val completionToShow = lastCompletion
+    if (showCompletionDialog && completionToShow != null) {
         CompletionDialog(
-            levelTitle = uiState.level.displayName(),
-            durationMillis = lastCompletion?.durationMillis,
+            levelTitle = completionToShow.levelName,
+            revealedCount = completionToShow.revealedCount,
+            totalCount = completionToShow.totalCount,
+            durationMillis = completionToShow.durationMillis,
             showBackToNational = uiState.level is MapLevel.Province,
             onRestart = {
                 showCompletionDialog = false

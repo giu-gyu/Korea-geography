@@ -47,6 +47,8 @@ class QuizViewModel(application: Application) : AndroidViewModel(application) {
 
     fun loadHistory(): List<HistoryEntry> = historyRepository.loadEntries()
 
+    fun deleteHistoryEntry(entry: HistoryEntry) = historyRepository.deleteEntry(entry.completedAtMillis)
+
     private val _uiState = MutableStateFlow(QuizUiState())
     val uiState: StateFlow<QuizUiState> = _uiState.asStateFlow()
 
@@ -194,8 +196,11 @@ class QuizViewModel(application: Application) : AndroidViewModel(application) {
                 totalCount = state.regions.size,
             )
             historyRepository.addEntry(entry)
-            // No _lastCompletion update here — that would wrongly fire the completion
-            // celebration/confetti for a run that wasn't actually finished.
+            // Celebrate (confetti + result dialog) only if at least one region was actually
+            // solved — stopping with nothing answered isn't worth a celebration.
+            if (entry.revealedCount >= 1) {
+                _lastCompletion.value = entry
+            }
         }
         _uiState.update { it.copy(started = false, guesses = emptyMap(), selectedRegionCode = null) }
         persistCurrentProgress()
