@@ -17,9 +17,11 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.toSize
 import com.koreageo.quiz.geo.Region
@@ -37,6 +39,7 @@ fun MapCanvas(
     camera: CameraState,
     fitScale: Float,
     baseLabelSp: Float,
+    isNationalLevel: Boolean,
     showLabelsInBrowseMode: Boolean,
     onCanvasSizeChanged: (Size) -> Unit,
     onTapRegion: (Region) -> Unit,
@@ -114,14 +117,27 @@ fun MapCanvas(
             // neighboring labels grows faster than the text itself, easing overlap.
             val zoomRatio = (transform.scale / fitScale).coerceAtLeast(0.05f)
             val fontSizeSp = (baseLabelSp * sqrt(zoomRatio)).coerceIn(baseLabelSp * 0.6f, baseLabelSp * 3f)
+            // 광역자치단체(시/도) 이름은 진하고 이탤릭체로, 그 아래 시/군/구 이름은
+            // 보통 굵기로 그려서 지도만 보고도 어느 행정 단계인지 구분되게 한다.
             val layout = textMeasurer.measure(
                 text = region.name,
-                style = TextStyle(
-                    color = LABEL_TEXT_COLOR,
-                    fontSize = fontSizeSp.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    textAlign = TextAlign.Center,
-                ),
+                style = if (isNationalLevel) {
+                    TextStyle(
+                        color = LABEL_TEXT_COLOR,
+                        fontSize = fontSizeSp.sp,
+                        fontWeight = FontWeight.Black,
+                        fontStyle = FontStyle.Italic,
+                        letterSpacing = 0.05.em,
+                        textAlign = TextAlign.Center,
+                    )
+                } else {
+                    TextStyle(
+                        color = LABEL_TEXT_COLOR,
+                        fontSize = fontSizeSp.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        textAlign = TextAlign.Center,
+                    )
+                },
             )
             val anchor = transform.worldToScreen(region.centroid)
             labelBoxes.add(LabelBox(layout, anchor.x, anchor.y))

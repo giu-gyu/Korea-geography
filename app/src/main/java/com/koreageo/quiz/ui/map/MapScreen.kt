@@ -152,6 +152,7 @@ fun MapScreen(viewModel: QuizViewModel = viewModel()) {
                 camera = camera,
                 fitScale = fitScale,
                 baseLabelSp = if (uiState.level is MapLevel.National) 9f else 13f,
+                isNationalLevel = uiState.level is MapLevel.National,
                 showLabelsInBrowseMode = settings.showLabelsInBrowseMode,
                 onCanvasSizeChanged = { canvasSize = it },
                 onTapRegion = viewModel::tapRegion,
