@@ -12,7 +12,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
@@ -149,7 +148,12 @@ fun MapCanvas(
 
         // Pass 2: measure every visible label, then push overlapping ones apart by the
         // minimum amount before drawing any of them on top of the finished polygon layer.
+        // Blanks are excluded from overlap resolution — they stay at each region's actual
+        // centroid even if that means two blanks sit right on top of each other, since the
+        // point is to mark "answer goes here", not to be individually legible like revealed
+        // text is.
         val labelBoxes = ArrayList<LabelBox>(drawOrder.size)
+        val blankBoxes = ArrayList<LabelBox>(drawOrder.size)
         for (region in drawOrder) {
             val guess = guesses[region.code] ?: GuessState()
             val showText = guess.revealed || (!started && showLabelsInBrowseMode)
@@ -186,32 +190,24 @@ fun MapCanvas(
                 },
             )
             val anchor = transform.worldToScreen(region.centroid)
-            labelBoxes.add(LabelBox(layout, isBlank = !showText, anchor.x, anchor.y))
+            val box = LabelBox(layout, isBlank = !showText, anchor.x, anchor.y)
+            if (box.isBlank) blankBoxes.add(box) else labelBoxes.add(box)
         }
 
         resolveLabelOverlaps(labelBoxes)
 
         val blankPaddingPx = 4.dp.toPx()
+        for (box in blankBoxes) {
+            val topLeft = Offset(box.cx - box.halfWidth - blankPaddingPx, box.cy - box.halfHeight - blankPaddingPx)
+            val size = Size(box.layout.size.width + blankPaddingPx * 2, box.layout.size.height + blankPaddingPx * 2)
+            drawRect(color = BLANK_FILL_COLOR, topLeft = topLeft, size = size)
+            drawRect(color = BLANK_STROKE_COLOR, topLeft = topLeft, size = size, style = Stroke(width = 2.5f))
+        }
         for (box in labelBoxes) {
-            if (box.isBlank) {
-                // Transparent — no fill — so the region's own color (and the tap-flash
-                // highlight) still shows through the blank, confirming what got tapped.
-                val topLeft = Offset(box.cx - box.halfWidth - blankPaddingPx, box.cy - box.halfHeight - blankPaddingPx)
-                val size = Size(box.layout.size.width + blankPaddingPx * 2, box.layout.size.height + blankPaddingPx * 2)
-                val cornerRadius = CornerRadius(blankPaddingPx)
-                drawRoundRect(
-                    color = BLANK_STROKE_COLOR,
-                    topLeft = topLeft,
-                    size = size,
-                    cornerRadius = cornerRadius,
-                    style = Stroke(width = 2.5f),
-                )
-            } else {
-                drawText(
-                    box.layout,
-                    topLeft = Offset(box.cx - box.halfWidth, box.cy - box.halfHeight),
-                )
-            }
+            drawText(
+                box.layout,
+                topLeft = Offset(box.cx - box.halfWidth, box.cy - box.halfHeight),
+            )
         }
 
         val loveRegion = loveBurstRegion

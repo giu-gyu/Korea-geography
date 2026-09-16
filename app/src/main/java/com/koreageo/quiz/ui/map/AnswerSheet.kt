@@ -10,16 +10,14 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -36,7 +34,6 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.koreageo.quiz.quiz.GuessState
@@ -80,16 +77,6 @@ fun AnswerSheet(
                     modifier = Modifier.padding(horizontal = 22.dp, vertical = 24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    Surface(
-                        shape = CircleShape,
-                        color = ANSWER_ACCENT_COLOR.copy(alpha = 0.14f),
-                        modifier = Modifier.size(48.dp),
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Text(text = "📍", fontSize = 22.sp)
-                        }
-                    }
-                    Spacer(Modifier.height(10.dp))
                     Text(
                         text = "이 지역의 이름은 무엇일까요?",
                         style = MaterialTheme.typography.titleMedium,
@@ -107,7 +94,8 @@ fun AnswerSheet(
                             }
                         },
                         singleLine = true,
-                        placeholder = { Text("정답을 입력하세요") },
+                        placeholder = { Text("정답을 입력하세요", textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth()) },
+                        textStyle = LocalTextStyle.current.copy(textAlign = TextAlign.Center),
                         shape = RoundedCornerShape(16.dp),
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = ANSWER_ACCENT_COLOR,
