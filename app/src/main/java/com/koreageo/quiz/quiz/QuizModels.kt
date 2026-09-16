@@ -8,20 +8,25 @@ data class GuessState(
 )
 
 /**
- * User-configurable hint behavior. A threshold of 0 means that hint is turned off entirely;
- * 1-4 is the number of wrong guesses needed before its button appears.
+ * User-configurable hint behavior. `null` means that hint is turned off entirely (the "X"
+ * option); 0 means it's available immediately with no wrong guesses needed; 1-4 is the number
+ * of wrong guesses required before its button appears.
  */
 data class QuizSettings(
     val showLabelsInBrowseMode: Boolean = true,
-    val characterCountHintThreshold: Int = 0,
-    val choseongHintThreshold: Int = 3,
+    val characterCountHintThreshold: Int? = null,
+    val choseongHintThreshold: Int? = 3,
 )
 
-fun GuessState.characterCountHintAvailable(settings: QuizSettings): Boolean =
-    settings.characterCountHintThreshold > 0 && wrongCount >= settings.characterCountHintThreshold
+fun GuessState.characterCountHintAvailable(settings: QuizSettings): Boolean {
+    val threshold = settings.characterCountHintThreshold ?: return false
+    return wrongCount >= threshold
+}
 
-fun GuessState.choseongHintAvailable(settings: QuizSettings): Boolean =
-    settings.choseongHintThreshold > 0 && wrongCount >= settings.choseongHintThreshold
+fun GuessState.choseongHintAvailable(settings: QuizSettings): Boolean {
+    val threshold = settings.choseongHintThreshold ?: return false
+    return wrongCount >= threshold
+}
 
 sealed class MapLevel {
     /** Stable key used to keep per-level quiz progress separate. */

@@ -53,17 +53,17 @@ fun SettingsDialog(
                 }
 
                 Spacer(Modifier.height(20.dp))
-                Text("글자수 힌트 (틀린 횟수, 0은 사용 안 함)", style = MaterialTheme.typography.bodyLarge)
+                Text("글자수 힌트 (X=사용 안 함, 0=처음부터, 1~4=틀린 횟수)", style = MaterialTheme.typography.bodyLarge)
                 Spacer(Modifier.height(8.dp))
-                NumberChoiceRow(
+                HintThresholdRow(
                     value = settings.characterCountHintThreshold,
                     onValueChange = { onSettingsChange(settings.copy(characterCountHintThreshold = it)) },
                 )
 
                 Spacer(Modifier.height(20.dp))
-                Text("초성 힌트 (틀린 횟수, 0은 사용 안 함)", style = MaterialTheme.typography.bodyLarge)
+                Text("초성 힌트 (X=사용 안 함, 0=처음부터, 1~4=틀린 횟수)", style = MaterialTheme.typography.bodyLarge)
                 Spacer(Modifier.height(8.dp))
-                NumberChoiceRow(
+                HintThresholdRow(
                     value = settings.choseongHintThreshold,
                     onValueChange = { onSettingsChange(settings.copy(choseongHintThreshold = it)) },
                 )
@@ -77,22 +77,25 @@ fun SettingsDialog(
     }
 }
 
+/** null = "X" (hint off entirely), 0 = available immediately, 1-4 = wrong guesses needed. */
 @Composable
-private fun NumberChoiceRow(value: Int, onValueChange: (Int) -> Unit) {
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        for (n in 0..4) {
-            if (n == value) {
+private fun HintThresholdRow(value: Int?, onValueChange: (Int?) -> Unit) {
+    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        val options: List<Int?> = listOf(null, 0, 1, 2, 3, 4)
+        for (option in options) {
+            val label = option?.toString() ?: "X"
+            if (option == value) {
                 Button(
-                    onClick = { onValueChange(n) },
-                    modifier = Modifier.size(44.dp),
+                    onClick = { onValueChange(option) },
+                    modifier = Modifier.size(40.dp),
                     contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
-                ) { Text("$n") }
+                ) { Text(label) }
             } else {
                 OutlinedButton(
-                    onClick = { onValueChange(n) },
-                    modifier = Modifier.size(44.dp),
+                    onClick = { onValueChange(option) },
+                    modifier = Modifier.size(40.dp),
                     contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
-                ) { Text("$n") }
+                ) { Text(label) }
             }
         }
     }
