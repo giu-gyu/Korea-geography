@@ -83,6 +83,15 @@ fun MapScreen(viewModel: QuizViewModel = viewModel()) {
         if (uiState.completed) showCompletionDialog = true
     }
 
+    // 얼마 안 남았을 때(3개 이하) 살짝 알려준다.
+    LaunchedEffect(uiState.revealedCount, uiState.started, uiState.level.key) {
+        if (!uiState.started) return@LaunchedEffect
+        val remaining = uiState.regions.size - uiState.revealedCount
+        if (remaining in 1..3) {
+            snackbarHostState.showSnackbar("${remaining}개 남았습니다")
+        }
+    }
+
     LaunchedEffect(viewModel) {
         viewModel.events.collect { event ->
             val message = when (event) {
