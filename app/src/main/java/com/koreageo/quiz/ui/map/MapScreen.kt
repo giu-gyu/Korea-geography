@@ -199,6 +199,8 @@ fun MapScreen(viewModel: QuizViewModel = viewModel()) {
             settings = settings,
             onSubmit = viewModel::submitAnswer,
             onDismiss = viewModel::dismissAnswerSheet,
+            onRequestCharacterCountHint = viewModel::requestCharacterCountHint,
+            onRequestChoseongHint = viewModel::requestChoseongHint,
         )
     }
 

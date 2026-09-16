@@ -159,6 +159,28 @@ class QuizViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun requestCharacterCountHint() {
+        val state = _uiState.value
+        val target = state.selectedRegion ?: return
+        val current = state.guesses[target.code] ?: return
+        if (!current.characterCountHintAvailable(_settings.value)) return
+        val updated = state.guesses.toMutableMap()
+        updated[target.code] = current.copy(characterCountHintShown = true)
+        _uiState.update { it.copy(guesses = updated) }
+        persistCurrentProgress()
+    }
+
+    fun requestChoseongHint() {
+        val state = _uiState.value
+        val target = state.selectedRegion ?: return
+        val current = state.guesses[target.code] ?: return
+        if (!current.choseongHintAvailable(_settings.value)) return
+        val updated = state.guesses.toMutableMap()
+        updated[target.code] = current.copy(choseongHintShown = true)
+        _uiState.update { it.copy(guesses = updated) }
+        persistCurrentProgress()
+    }
+
     /** Ends the current run early (the "여기까지" button) and logs the partial result to history. */
     fun stopHere() {
         val state = _uiState.value

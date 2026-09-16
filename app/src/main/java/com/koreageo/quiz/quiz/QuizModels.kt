@@ -3,6 +3,8 @@ package com.koreageo.quiz.quiz
 data class GuessState(
     val revealed: Boolean = false,
     val wrongCount: Int = 0,
+    val characterCountHintShown: Boolean = false,
+    val choseongHintShown: Boolean = false,
 )
 
 /**
