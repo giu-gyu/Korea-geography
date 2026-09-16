@@ -70,10 +70,16 @@ fun MapCanvas(
     val drawOrder = remember(regions) { regions.sortedByDescending { it.approxArea } }
     // Bounding-box-adjacency-based coloring, not list position — see assignRegionColors().
     val colorAssignment = remember(regions) { assignRegionColors(regions, REGION_PALETTE.size) }
+    // Used to keep pan/pinch from dragging the whole map off screen — see clampPan().
+    val worldBounds = remember(regions) { unionBounds(regions) }
+    var localCanvasSize by remember { mutableStateOf(Size.Zero) }
 
     Canvas(
         modifier = modifier
-            .onSizeChanged { onCanvasSizeChanged(it.toSize()) }
+            .onSizeChanged {
+                localCanvasSize = it.toSize()
+                onCanvasSizeChanged(it.toSize())
+            }
             .pointerInput(regions) {
                 detectTapGestures { screenPoint ->
                     val worldPoint = camera.current.screenToWorld(screenPoint)
@@ -100,13 +106,27 @@ fun MapCanvas(
                     onTapRegion(hit)
                 }
             }
-            .pointerInput(fitScale) {
+            .pointerInput(fitScale, worldBounds) {
                 detectTransformGestures { centroid, pan, zoom, _ ->
                     scope.launch {
+                        // Keep at least ~48dp of the map on screen on every side, however far
+                        // the user pans or zooms out — otherwise the whole country can end up
+                        // dragged off screen with no visible clue which way to bring it back.
+                        val marginPx = 48.dp.toPx()
                         if (zoom != 1f) {
-                            camera.zoomBy(zoom, centroid, minScale = fitScale * 0.85f, maxScale = fitScale * 8f)
+                            camera.zoomBy(
+                                zoom,
+                                centroid,
+                                minScale = fitScale * 0.85f,
+                                maxScale = fitScale * 8f,
+                                worldBounds = worldBounds,
+                                canvasSize = localCanvasSize,
+                                marginPx = marginPx,
+                            )
                         }
-                        if (pan != Offset.Zero) camera.panBy(pan.x, pan.y)
+                        if (pan != Offset.Zero) {
+                            camera.panBy(pan.x, pan.y, worldBounds = worldBounds, canvasSize = localCanvasSize, marginPx = marginPx)
+                        }
                     }
                 }
             },

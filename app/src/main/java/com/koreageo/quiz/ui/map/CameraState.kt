@@ -64,6 +64,24 @@ fun focusTransform(region: Region, canvasSize: Size, fitScale: Float): Transform
     return Transform(scale, tx, ty)
 }
 
+/**
+ * Constrains (tx, ty) so the map's [worldBounds] can never be dragged/zoomed entirely off
+ * screen — at least [marginPx] of it stays within [canvasSize] on every side. Without this, a
+ * pan or pinch gesture can push the whole country off the visible area with no way to tell
+ * which direction to drag back.
+ */
+fun clampPan(tx: Float, ty: Float, scale: Float, worldBounds: Rect, canvasSize: Size, marginPx: Float): Offset {
+    val minTx = marginPx - worldBounds.right * scale
+    val maxTx = canvasSize.width - marginPx - worldBounds.left * scale
+    val clampedTx = if (minTx <= maxTx) tx.coerceIn(minTx, maxTx) else tx
+
+    val minTy = marginPx - worldBounds.bottom * scale
+    val maxTy = canvasSize.height - marginPx - worldBounds.top * scale
+    val clampedTy = if (minTy <= maxTy) ty.coerceIn(minTy, maxTy) else ty
+
+    return Offset(clampedTx, clampedTy)
+}
+
 /** Shrinks [bounds] toward the given vertical anchor (0 = top, 1 = bottom), used for the intro fly-in. */
 fun zoomedBounds(bounds: Rect, factor: Float, verticalAnchor: Float): Rect {
     val newWidth = bounds.width * factor
@@ -97,9 +115,10 @@ class CameraState {
         launch { ty.animateTo(transform.ty, spec) }
     }
 
-    suspend fun panBy(dx: Float, dy: Float) {
-        tx.snapTo(tx.value + dx)
-        ty.snapTo(ty.value + dy)
+    suspend fun panBy(dx: Float, dy: Float, worldBounds: Rect, canvasSize: Size, marginPx: Float = 0f) {
+        val clamped = clampPan(tx.value + dx, ty.value + dy, scale.value, worldBounds, canvasSize, marginPx)
+        tx.snapTo(clamped.x)
+        ty.snapTo(clamped.y)
     }
 
     /**
@@ -110,13 +129,22 @@ class CameraState {
      * that happens to sit below the natural fit scale clamps the very first pinch down to that
      * ceiling and never lets it grow back.
      */
-    suspend fun zoomBy(factor: Float, focus: Offset, minScale: Float, maxScale: Float) {
+    suspend fun zoomBy(
+        factor: Float,
+        focus: Offset,
+        minScale: Float,
+        maxScale: Float,
+        worldBounds: Rect,
+        canvasSize: Size,
+        marginPx: Float = 0f,
+    ) {
         val newScale = (scale.value * factor).coerceIn(minScale, maxScale)
         val actualFactor = newScale / scale.value
         val newTx = focus.x - (focus.x - tx.value) * actualFactor
         val newTy = focus.y - (focus.y - ty.value) * actualFactor
+        val clamped = clampPan(newTx, newTy, newScale, worldBounds, canvasSize, marginPx)
         scale.snapTo(newScale)
-        tx.snapTo(newTx)
-        ty.snapTo(newTy)
+        tx.snapTo(clamped.x)
+        ty.snapTo(clamped.y)
     }
 }
