@@ -32,6 +32,7 @@ import com.koreageo.quiz.quiz.HangulUtil
 import com.koreageo.quiz.quiz.QuizSettings
 import com.koreageo.quiz.quiz.characterCountHintAvailable
 import com.koreageo.quiz.quiz.choseongHintAvailable
+import com.koreageo.quiz.quiz.isCorrectAnswer
 
 @Composable
 fun AnswerSheet(
@@ -56,7 +57,13 @@ fun AnswerSheet(
                 Spacer(Modifier.height(12.dp))
                 OutlinedTextField(
                     value = answer,
-                    onValueChange = { answer = it },
+                    onValueChange = { newValue ->
+                        answer = newValue
+                        // "확인"을 누르지 않아도, 입력값이 정답과 일치하는 순간 바로 정답 처리한다.
+                        if (isCorrectAnswer(newValue, targetName)) {
+                            onSubmit(newValue)
+                        }
+                    },
                     singleLine = true,
                     placeholder = { Text("정답을 입력하세요") },
                     keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
