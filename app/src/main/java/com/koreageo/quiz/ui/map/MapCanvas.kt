@@ -101,7 +101,7 @@ fun MapCanvas(
 
             val showLabel = !started || guess.revealed
             if (showLabel) {
-                val labelPoint = transform.worldToScreen(region.centroid)
+                val labelPoint = transform.worldToScreen(labelAnchor(region))
                 // Labels grow as the user zooms in past this level's default fit, and shrink
                 // (down to a floor) when zoomed out — sqrt-damped so screen distance between
                 // neighboring labels grows faster than the text itself, easing overlap.
