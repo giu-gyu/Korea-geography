@@ -34,3 +34,6 @@ val CHALLENGE_BUTTON_CONTENT_COLOR = Color(0xFFFFFFFF)
 /** Brief highlight flashed over whichever region a tap actually resolved to. */
 val TAP_FLASH_FILL_COLOR = Color(0xFFFFF176)
 val TAP_FLASH_STROKE_COLOR = Color(0xFFFFA000)
+
+/** Easter egg text color for the 부천시/수원시 love burst. */
+val LOVE_TEXT_COLOR = Color(0xFFE91E63)

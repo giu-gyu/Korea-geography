@@ -59,6 +59,9 @@ fun MapCanvas(
     // the tap leads straight into navigating away rather than opening the answer sheet.
     var flashRegionCode by remember { mutableStateOf<String?>(null) }
     val flashAlpha = remember { Animatable(0f) }
+    // Easter egg: tapping either of these floats a little "사랑해" heart up from the region.
+    var loveBurstRegion by remember { mutableStateOf<Region?>(null) }
+    val loveProgress = remember { Animatable(1f) }
     // Draw larger regions first so a smaller one that sits inside/against a bigger
     // neighbor (e.g. 서울특별시 in/against 경기도) renders on top instead of getting
     // painted over.
@@ -77,6 +80,13 @@ fun MapCanvas(
                     scope.launch {
                         flashAlpha.snapTo(1f)
                         flashAlpha.animateTo(0f, tween(500))
+                    }
+                    if (hit.name == "부천시" || hit.name == "수원시") {
+                        loveBurstRegion = hit
+                        scope.launch {
+                            loveProgress.snapTo(0f)
+                            loveProgress.animateTo(1f, tween(1400))
+                        }
                     }
                     onTapRegion(hit)
                 }
@@ -189,6 +199,30 @@ fun MapCanvas(
                     topLeft = Offset(box.cx - box.halfWidth, box.cy - box.halfHeight),
                 )
             }
+        }
+
+        val loveRegion = loveBurstRegion
+        if (loveRegion != null && loveProgress.value < 1f) {
+            val p = loveProgress.value
+            val anchor = transform.worldToScreen(loveRegion.centroid)
+            val riseDistance = 70.dp.toPx()
+            val alpha = (1f - p).coerceIn(0f, 1f)
+            val loveLayout = textMeasurer.measure(
+                text = "❤ 사랑해 ❤",
+                style = TextStyle(
+                    color = LOVE_TEXT_COLOR.copy(alpha = alpha),
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    textAlign = TextAlign.Center,
+                ),
+            )
+            drawText(
+                loveLayout,
+                topLeft = Offset(
+                    anchor.x - loveLayout.size.width / 2f,
+                    anchor.y - p * riseDistance - loveLayout.size.height / 2f,
+                ),
+            )
         }
     }
 }
