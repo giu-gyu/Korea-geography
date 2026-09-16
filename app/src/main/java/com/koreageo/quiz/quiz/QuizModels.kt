@@ -3,18 +3,16 @@ package com.koreageo.quiz.quiz
 data class GuessState(
     val revealed: Boolean = false,
     val wrongCount: Int = 0,
-    val characterCountHintShown: Boolean = false,
-    val choseongHintShown: Boolean = false,
 )
 
 /**
  * User-configurable hint behavior. `null` means that hint is turned off entirely (the "X"
- * option); 0 means it's available immediately with no wrong guesses needed; 1-4 is the number
- * of wrong guesses required before its button appears.
+ * option); 0 means it's shown immediately with no wrong guesses needed; 1-4 is the number of
+ * wrong guesses required before it's automatically shown.
  */
 data class QuizSettings(
     val showLabelsInBrowseMode: Boolean = true,
-    val characterCountHintThreshold: Int? = null,
+    val characterCountHintThreshold: Int? = 1,
     val choseongHintThreshold: Int? = 3,
 )
 

@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -41,8 +40,6 @@ fun AnswerSheet(
     settings: QuizSettings,
     onSubmit: (String) -> Unit,
     onDismiss: () -> Unit,
-    onRequestCharacterCountHint: () -> Unit,
-    onRequestChoseongHint: () -> Unit,
 ) {
     var answer by remember(guess) { mutableStateOf("") }
 
@@ -85,7 +82,8 @@ fun AnswerSheet(
                     )
                 }
 
-                if (guess.characterCountHintShown) {
+                // 힌트는 버튼을 누르지 않아도 설정된 틀린 횟수 조건을 만족하면 바로 나온다.
+                if (guess.characterCountHintAvailable(settings)) {
                     Spacer(Modifier.height(8.dp))
                     Text(
                         text = "글자수 힌트: ${targetName.length}글자",
@@ -94,7 +92,7 @@ fun AnswerSheet(
                     )
                 }
 
-                if (guess.choseongHintShown) {
+                if (guess.choseongHintAvailable(settings)) {
                     Spacer(Modifier.height(8.dp))
                     Text(
                         text = "초성 힌트: ${HangulUtil.choseong(targetName)}",
@@ -109,20 +107,10 @@ fun AnswerSheet(
                     horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
                     TextButton(onClick = onDismiss) { Text("취소") }
-                    Row {
-                        if (guess.characterCountHintAvailable(settings) && !guess.characterCountHintShown) {
-                            TextButton(onClick = onRequestCharacterCountHint) { Text("글자수 힌트") }
-                            Spacer(Modifier.width(4.dp))
-                        }
-                        if (guess.choseongHintAvailable(settings) && !guess.choseongHintShown) {
-                            TextButton(onClick = onRequestChoseongHint) { Text("초성 힌트") }
-                            Spacer(Modifier.width(4.dp))
-                        }
-                        Button(
-                            onClick = { if (answer.isNotBlank()) onSubmit(answer) },
-                            enabled = answer.isNotBlank(),
-                        ) { Text("확인") }
-                    }
+                    Button(
+                        onClick = { if (answer.isNotBlank()) onSubmit(answer) },
+                        enabled = answer.isNotBlank(),
+                    ) { Text("확인") }
                 }
             }
         }
