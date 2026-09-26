@@ -28,25 +28,28 @@ object HangulUtil {
 /** Trims and strips internal whitespace so "수원 시" and "수원시" compare equal. */
 fun normalizeAnswer(input: String): String = input.trim().replace("\\s+".toRegex(), "")
 
-/** Common short forms accepted at the province level, e.g. "서울" for "서울특별시". */
+/**
+ * Common short forms accepted at the province level, e.g. "서울" for "서울특별시". Keys are the
+ * current (2026-07-01 개편 반영) official names as loaded from the bundled boundary data.
+ */
 private val PROVINCE_ALIASES: Map<String, Set<String>> = mapOf(
     "서울특별시" to setOf("서울", "서울시"),
     "부산광역시" to setOf("부산", "부산시"),
     "대구광역시" to setOf("대구", "대구시"),
     "인천광역시" to setOf("인천", "인천시"),
-    "광주광역시" to setOf("광주", "광주시"),
     "대전광역시" to setOf("대전", "대전시"),
     "울산광역시" to setOf("울산", "울산시"),
     "세종시" to setOf("세종", "세종특별자치시"),
     "경기도" to setOf("경기"),
-    "강원도" to setOf("강원"),
+    "강원특별자치도" to setOf("강원", "강원도"),
     "충청북도" to setOf("충북"),
     "충청남도" to setOf("충남"),
-    "전라북도" to setOf("전북"),
-    "전라남도" to setOf("전남"),
+    "전북특별자치도" to setOf("전북", "전라북도"),
     "경상북도" to setOf("경북"),
     "경상남도" to setOf("경남"),
     "제주도" to setOf("제주", "제주특별자치도"),
+    // 2026-07-01 광주광역시+전라남도 통합 출범.
+    "전남광주통합특별시" to setOf("광주전남", "전남광주", "광주", "전남"),
 )
 
 /** 시/군/구는 항상 이 세 글자 중 하나로 끝나므로, 그 글자를 뗀 형태도 정답으로 인정한다. */

@@ -14,6 +14,7 @@ class SessionRepository(context: Context) {
 
     fun save(session: SavedSession) {
         val root = JSONObject()
+        root.put("dataVersion", CURRENT_DATA_VERSION)
         root.put("currentLevelType", session.currentLevelType)
         if (session.currentProvinceCode != null) root.put("currentProvinceCode", session.currentProvinceCode)
         if (session.currentProvinceName != null) root.put("currentProvinceName", session.currentProvinceName)
@@ -50,6 +51,9 @@ class SessionRepository(context: Context) {
         val raw = prefs.getString(KEY_SESSION, null) ?: return null
         return try {
             val root = JSONObject(raw)
+            // 지역 경계 데이터셋 자체가 바뀌면(예: 행정구역 코드 체계 변경) 예전 세션은 더 이상
+            // 유효하지 않다 — 저장된 지역 코드가 새 데이터에서 다른 지역을 가리킬 수 있다.
+            if (root.optInt("dataVersion", 1) != CURRENT_DATA_VERSION) return null
 
             val guessesByLevel = mutableMapOf<String, Map<String, GuessState>>()
             root.optJSONObject("guessesByLevel")?.let { guessesJson ->
@@ -107,5 +111,10 @@ class SessionRepository(context: Context) {
     companion object {
         private const val PREFS_NAME = "quiz_session"
         private const val KEY_SESSION = "session"
+
+        /** Bump when the underlying region dataset changes shape (e.g. code scheme, sido/sgg
+         * splits/merges) so old saved sessions referencing now-meaningless codes are discarded
+         * instead of silently loading the wrong region under an old name. */
+        private const val CURRENT_DATA_VERSION = 2
     }
 }

@@ -1,7 +1,8 @@
 # 대한민국 지리 퀴즈 (Korea Geography Quiz)
 
 Kotlin + Jetpack Compose Android app for learning Korean administrative
-divisions: 광역자치단체(17개 시/도) → 시/군/구(229개).
+divisions: 광역자치단체(16개 시/도, 2026-07-01 광주·전남 통합 이후) →
+시/군/구(230개).
 
 ## How it works
 
@@ -46,19 +47,34 @@ keyboard behavior with the answer dialog are worth checking first.
 
 ## Data source & scope
 
-Boundary polygons come from the public `southkorea/southkorea-maps` GitHub
-repository (2013 KOSTAT-derived, pre-simplified GeoJSON, ~12k points total —
-small enough to bundle directly, no map SDK or API key needed). Two manual
-corrections were applied to match today's administrative map:
+Boundary polygons come from the [`admdongkor`](https://github.com/vuski/admdongkor)
+npm package (MIT, 행정안전부 공개자료 가공, actively maintained with dated
+snapshots back to 1975). The app bundles the `"20260701"` snapshot — the most recent available at
+build time, which happens to be the date Korea's latest administrative
+changes took effect (제9회 지방선거 다음 날). To refresh later, call
+`adk.get(newVersion, "sido" | "sgg")` for a newer entry from `adk.versions()`
+and re-run the ward-merge preprocessing script (see git history for the
+script used to build the currently-bundled snapshot).
 
-- Cities that were split into wards in the 2013 source (수원시, 성남시,
-  안양시, 부천시, 안산시, 고양시, 용인시, 청주시, 천안시, 전주시, 포항시,
-  창원시) are merged back into a single city polygon, since this app teaches
-  city names, not their internal wards.
-- 청원군, which merged into 청주시 in 2014, is folded into 청주시's polygon.
+Cities whose wards appear as separate sgg features in the source (수원시,
+성남시, 안양시, 부천시, 안산시, 고양시, 용인시, 화성시, 청주시, 천안시,
+전주시, 포항시, 창원시) are merged back into a single city polygon at build
+time, since this app teaches city names, not their internal wards. The merge
+is a real polygon union (matching boundary edges between adjacent wards are
+detected and cancelled, not just a naive concatenation), so no ward seams
+remain in the merged shape.
 
-Interior holes (found in exactly one source polygon, 청원군) are dropped for
-simplicity — the visual difference is negligible.
+As of the bundled snapshot, this data source already reflects:
+- 세종특별자치시/제주특별자치도 shortened to 세종시/제주도 for display (the
+  only two manual renames — everything else uses its exact current official
+  name).
+- 인천 검단구/영종구/제물포구/서해구 (2026-07-01 인천형 행정체제 개편).
+- 전남광주통합특별시 (2026-07-01, 광주광역시+전라남도 최초 광역행정통합).
+- 강원특별자치도 (2023), 전북특별자치도 (2024).
+- 인천 남구 → 미추홀구 (2018), 청주시+청원군 통합 (2014), 여주군 → 여주시
+  (2013), and every other historical rename/merge already baked into the
+  snapshot — none of these need manual patching the way the old 2013-dataset
+  version of this project required.
 
 **Scope**: v1 covers 시/도 and 시/군/구 only, per the project's own descoping
 decision (자치구/법정동 would need ~3,500 more boundary records). The
@@ -78,7 +94,7 @@ be added later by extending the `when` branches rather than restructuring.
 - **Rust**: not used. Nothing here is CPU-bound enough to justify a native
   module — hit-testing runs against a few thousand points, and rendering is a
   few hundred `Path` draws per frame. Kotlin/Compose alone is plenty fast.
-- Per-level quiz progress (revealed regions, wrong counts) is kept in memory
-  only (`QuizViewModel`), not persisted to disk — it resets when the app
-  process dies. Worth adding `SavedStateHandle` or a small datastore if you
-  want progress to survive process death.
+- Per-level quiz progress (revealed regions, wrong counts, which screen was
+  open) is persisted to SharedPreferences on every change (`SessionRepository`)
+  so it survives the app's process being killed in the background, not just
+  configuration changes.
