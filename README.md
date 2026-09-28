@@ -103,7 +103,7 @@ dataset yet still needs an occasional look at the news.
 
 A bottom adaptive banner is always shown, and an interstitial plays every time a
 run ends (all answered or "여기까지"), before the result dialog, and on every 5th
-press of 도전/다시 도전 (right before the run starts). The app currently
+time a province is entered by tapping it on the national map. The app currently
 uses Google's public **test** AdMob IDs, set in one place: `defaultConfig` in
 `app/build.gradle.kts` (`admobAppId`, `ADMOB_BANNER_ID`, `ADMOB_INTERSTITIAL_ID`).
 Replace them with real IDs from the AdMob console before publishing.

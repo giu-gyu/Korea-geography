@@ -33,7 +33,7 @@ data class QuizUiState(
     val canDrillDeeper: Boolean get() = level is MapLevel.National
 }
 
-private const val QUIZ_ENTRIES_PER_AD = 5
+private const val PROVINCE_ENTRIES_PER_AD = 5
 
 class QuizViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -133,10 +133,6 @@ class QuizViewModel(application: Application) : AndroidViewModel(application) {
         persistSession()
     }
 
-    /** 도전 버튼으로 진입할 때마다 부른다. [QUIZ_ENTRIES_PER_AD]번째마다 true(전면 광고를 띄울 차례)를 돌려준다. */
-    fun registerQuizEntry(): Boolean =
-        settingsRepository.incrementQuizEntryCount() % QUIZ_ENTRIES_PER_AD == 0
-
     fun startQuiz() {
         questStartedAtByLevel[_uiState.value.level.key] = System.currentTimeMillis()
         _uiState.update { it.copy(started = true, guesses = emptyMap(), selectedRegionCode = null) }
@@ -154,6 +150,10 @@ class QuizViewModel(application: Application) : AndroidViewModel(application) {
         // 붙어있는 지역을 마저 맞히기가 어려워진다.
         if (state.level is MapLevel.National && (!state.started || state.completed)) {
             selectProvince(region)
+            // 지도를 눌러 도/시 안으로 들어간 횟수만 센다. 복원/뒤로가기/도전 버튼은 세지 않는다.
+            if (settingsRepository.incrementProvinceEntryCount() % PROVINCE_ENTRIES_PER_AD == 0) {
+                _events.tryEmit(UiEvent.ProvinceEntryAd)
+            }
             return
         }
 

@@ -40,6 +40,9 @@ sealed class UiEvent {
     data object AlreadyRevealed : UiEvent()
     data object DrillNotAvailableYet : UiEvent()
 
+    /** 지도를 눌러 도/시에 5번 진입했다 — 전면 광고를 띄울 차례. */
+    data object ProvinceEntryAd : UiEvent()
+
     /** 도전이 끝났다(전부 맞힘 또는 "여기까지"). [showResult]면 결과 다이얼로그/폭죽을 보여준다. */
     data class QuizEnded(val showResult: Boolean) : UiEvent()
 }
