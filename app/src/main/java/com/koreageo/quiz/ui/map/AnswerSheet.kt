@@ -41,6 +41,7 @@ import androidx.compose.ui.window.DialogProperties
 import com.koreageo.quiz.quiz.GuessState
 import com.koreageo.quiz.quiz.HangulUtil
 import com.koreageo.quiz.quiz.isCorrectAnswer
+import com.koreageo.quiz.quiz.normalizeAnswer
 
 private val ANSWER_ACCENT_COLOR = CHALLENGE_BUTTON_COLOR
 
@@ -52,8 +53,13 @@ fun AnswerSheet(
     onDismiss: () -> Unit,
     onRequestCharacterCountHint: () -> Unit,
     onRequestChoseongHint: () -> Unit,
+    onAutoHint: () -> Unit,
+    characterCountHintEnabled: Boolean,
+    choseongHintEnabled: Boolean,
 ) {
-    var answer by remember(guess) { mutableStateOf("") }
+    // 오답 제출로 wrongCount가 바뀔 때만 입력창을 비운다 (힌트가 뜰 때 입력 중인 글자가 지워지면 안 됨).
+    var answer by remember(guess.wrongCount) { mutableStateOf("") }
+    var backspaceCount by remember(guess.wrongCount) { mutableStateOf(0) }
 
     // 화면 아래쪽 약 85~90% 지점에 띄운다 — 정중앙이나 그 위쪽에 뜨면 방금 탭한 작은
     // 지역(서울특별시 등)이 다이얼로그에 가려져서 어떤 지역이 눌렸는지 확인할 수 없다.
@@ -83,10 +89,14 @@ fun AnswerSheet(
                     OutlinedTextField(
                         value = answer,
                         onValueChange = { newValue ->
+                            if (HangulUtil.jamoCount(newValue) < HangulUtil.jamoCount(answer)) backspaceCount++
                             answer = newValue
                             // 별도 확인 버튼 없이, 입력값이 정답과 일치하는 순간 바로 정답 처리한다.
                             if (isCorrectAnswer(newValue, targetName)) {
                                 onSubmit(newValue)
+                            } else if (backspaceCount >= 2 || normalizeAnswer(newValue).length > targetName.length - 1) {
+                                // 정답 글자수(-1, 시/군/구를 뗀 형태)를 넘겼거나 지웠다 쓰기를 반복하면 막힌 것으로 본다.
+                                onAutoHint()
                             }
                         },
                         singleLine = true,
@@ -116,7 +126,7 @@ fun AnswerSheet(
                         )
                     }
 
-                    if (guess.characterCountHintShown) {
+                    if (characterCountHintEnabled && guess.characterCountHintShown) {
                         Spacer(Modifier.height(10.dp))
                         Text(
                             text = "글자수 힌트: ${targetName.length}글자",
@@ -125,7 +135,7 @@ fun AnswerSheet(
                         )
                     }
 
-                    if (guess.choseongHintShown) {
+                    if (choseongHintEnabled && guess.choseongHintShown) {
                         Spacer(Modifier.height(10.dp))
                         Text(
                             text = "초성 힌트: ${HangulUtil.choseong(targetName)}",
@@ -134,16 +144,18 @@ fun AnswerSheet(
                         )
                     }
 
-                    if (!guess.characterCountHintShown || !guess.choseongHintShown) {
+                    val canRequestCharacterCount = characterCountHintEnabled && !guess.characterCountHintShown
+                    val canRequestChoseong = choseongHintEnabled && !guess.choseongHintShown
+                    if (canRequestCharacterCount || canRequestChoseong) {
                         Spacer(Modifier.height(18.dp))
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.End),
                         ) {
-                            if (!guess.characterCountHintShown) {
+                            if (canRequestCharacterCount) {
                                 TextButton(onClick = onRequestCharacterCountHint) { Text("글자수 힌트") }
                             }
-                            if (!guess.choseongHintShown) {
+                            if (canRequestChoseong) {
                                 TextButton(onClick = onRequestChoseongHint) { Text("초성 힌트") }
                             }
                         }

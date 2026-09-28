@@ -14,8 +14,9 @@ divisions: 광역자치단체(16개 시/도, 2026-07-01 광주·전남 통합 �
    subdivisions.
 3. Press **시작** to hide all labels and start the quiz. Tap any region, type
    its name, and submit. Correct answers reveal that region's label
-   permanently. Three wrong guesses on the same region unlocks a **힌트**
-   button that shows its 초성 (initial consonants).
+   permanently. While typing, going past the answer's length (minus 1)
+   or hitting backspace twice automatically shows the 글자수/초성 hints; each kind
+   can be turned off in 설정.
 4. Guessing every region in the current view shows a completion dialog.
 
 ## Project layout
@@ -80,6 +81,14 @@ As of the bundled snapshot, this data source already reflects:
 decision (자치구/법정동 would need ~3,500 more boundary records). The
 `MapLevel` sealed class and `QuizViewModel` are written so a third level could
 be added later by extending the `when` branches rather than restructuring.
+
+## Ads
+
+A bottom adaptive banner is always shown, and an interstitial plays every time a
+run ends (all answered or "여기까지"), before the result dialog. The app currently
+uses Google's public **test** AdMob IDs, set in one place: `defaultConfig` in
+`app/build.gradle.kts` (`admobAppId`, `ADMOB_BANNER_ID`, `ADMOB_INTERSTITIAL_ID`).
+Replace them with real IDs from the AdMob console before publishing.
 
 ## Design notes / trade-offs
 

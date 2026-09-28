@@ -9,6 +9,7 @@ import com.koreageo.quiz.history.HistoryEntry
 import com.koreageo.quiz.history.HistoryRepository
 import com.koreageo.quiz.session.SavedSession
 import com.koreageo.quiz.session.SessionRepository
+import com.koreageo.quiz.settings.SettingsRepository
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -37,6 +38,7 @@ class QuizViewModel(application: Application) : AndroidViewModel(application) {
     private val repository = GeoRepository(application)
     private val historyRepository = HistoryRepository(application)
     private val sessionRepository = SessionRepository(application)
+    private val settingsRepository = SettingsRepository(application)
 
     // quiz progress kept per level so it survives navigating back and forth
     private val guessesByLevel = mutableMapOf<String, Map<String, GuessState>>()
@@ -58,11 +60,12 @@ class QuizViewModel(application: Application) : AndroidViewModel(application) {
     private val _events = MutableSharedFlow<UiEvent>(extraBufferCapacity = 4)
     val events: SharedFlow<UiEvent> = _events
 
-    private val _settings = MutableStateFlow(QuizSettings())
+    private val _settings = MutableStateFlow(settingsRepository.load())
     val settings: StateFlow<QuizSettings> = _settings.asStateFlow()
 
     fun updateSettings(newSettings: QuizSettings) {
         _settings.value = newSettings
+        settingsRepository.save(newSettings)
     }
 
     init {
@@ -182,6 +185,23 @@ class QuizViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    /** 입력하다 막힌 것으로 보일 때 호출된다. 설정에서 켜둔 종류의 힌트를 한꺼번에 띄운다. */
+    fun requestAutoHints() {
+        val state = _uiState.value
+        val target = state.selectedRegion ?: return
+        val current = state.guesses[target.code] ?: GuessState()
+        val settings = _settings.value
+        val updatedGuess = current.copy(
+            characterCountHintShown = current.characterCountHintShown || settings.characterCountHintEnabled,
+            choseongHintShown = current.choseongHintShown || settings.choseongHintEnabled,
+        )
+        if (updatedGuess == current) return
+        val updated = state.guesses.toMutableMap()
+        updated[target.code] = updatedGuess
+        _uiState.update { it.copy(guesses = updated) }
+        persistCurrentProgress()
+    }
+
     fun requestCharacterCountHint() {
         val state = _uiState.value
         val target = state.selectedRegion ?: return
@@ -223,8 +243,10 @@ class QuizViewModel(application: Application) : AndroidViewModel(application) {
                 _lastCompletion.value = entry
             }
         }
+        val showResult = state.revealedCount >= 1 && startedAt != null
         _uiState.update { it.copy(started = false, guesses = emptyMap(), selectedRegionCode = null) }
         persistCurrentProgress()
+        _events.tryEmit(UiEvent.QuizEnded(showResult))
     }
 
     private fun persistCurrentProgress() {
@@ -268,5 +290,6 @@ class QuizViewModel(application: Application) : AndroidViewModel(application) {
         historyRepository.addEntry(entry)
         _lastCompletion.value = entry
         persistSession()
+        _events.tryEmit(UiEvent.QuizEnded(showResult = true))
     }
 }

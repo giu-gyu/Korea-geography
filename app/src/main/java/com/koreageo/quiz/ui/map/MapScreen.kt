@@ -1,9 +1,13 @@
 package com.koreageo.quiz.ui.map
 
+import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -15,6 +19,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.CircularProgressIndicator
@@ -43,12 +48,16 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.koreageo.quiz.ads.Ads
+import com.koreageo.quiz.ads.BannerAd
 import com.koreageo.quiz.quiz.MapLevel
 import com.koreageo.quiz.quiz.QuizViewModel
 import com.koreageo.quiz.quiz.UiEvent
 import com.koreageo.quiz.quiz.displayName
+import com.koreageo.quiz.ui.settings.SettingsScreen
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -63,6 +72,9 @@ fun MapScreen(viewModel: QuizViewModel = viewModel()) {
     var hasPlayedIntro by rememberSaveable { mutableStateOf(false) }
     var showCompletionDialog by remember(uiState.level.key) { mutableStateOf(false) }
     var showHistoryDialog by remember { mutableStateOf(false) }
+    var showSettings by rememberSaveable { mutableStateOf(false) }
+    var celebrateTrigger by remember { mutableStateOf<Long?>(null) }
+    val context = LocalContext.current
     var fitScale by remember { mutableStateOf(1f) }
     var remainingMessage by remember { mutableStateOf<String?>(null) }
     var nextBlankCursor by remember(uiState.level.key) { mutableStateOf(0) }
@@ -100,12 +112,6 @@ fun MapScreen(viewModel: QuizViewModel = viewModel()) {
         }
     }
 
-    // 전체 완료든, "여기까지"로 1개 이상 맞히고 조기 종료든, lastCompletion이 새로
-    // 갱신될 때마다 결과 다이얼로그를 띄운다.
-    LaunchedEffect(lastCompletion?.completedAtMillis) {
-        if (lastCompletion != null) showCompletionDialog = true
-    }
-
     // 얼마 안 남았을 때(3개 이하) 화면 중앙 위쪽에 살짝 알려준다.
     LaunchedEffect(uiState.revealedCount, uiState.started, uiState.level.key) {
         if (!uiState.started) return@LaunchedEffect
@@ -119,12 +125,19 @@ fun MapScreen(viewModel: QuizViewModel = viewModel()) {
 
     LaunchedEffect(viewModel) {
         viewModel.events.collect { event ->
-            val message = when (event) {
-                UiEvent.WrongAnswer -> null
-                UiEvent.AlreadyRevealed -> "이미 맞춘 지역입니다."
-                UiEvent.DrillNotAvailableYet -> "이 단계는 아직 준비 중입니다."
+            when (event) {
+                UiEvent.WrongAnswer -> Unit
+                UiEvent.AlreadyRevealed -> scope.launch { snackbarHostState.showSnackbar("이미 맞춘 지역입니다.") }
+                UiEvent.DrillNotAvailableYet -> scope.launch { snackbarHostState.showSnackbar("이 단계는 아직 준비 중입니다.") }
+                // 도전이 끝날 때마다 전면 광고를 먼저 보여주고, 광고가 닫힌 뒤에 결과/폭죽을 띄운다.
+                is UiEvent.QuizEnded -> {
+                    context.findActivity()?.let { Ads.showInterstitial(it) }
+                    if (event.showResult) {
+                        celebrateTrigger = System.currentTimeMillis()
+                        showCompletionDialog = true
+                    }
+                }
             }
-            if (message != null) snackbarHostState.showSnackbar(message)
         }
     }
 
@@ -158,32 +171,37 @@ fun MapScreen(viewModel: QuizViewModel = viewModel()) {
                                 contentDescription = if (settings.showLabelsInBrowseMode) "지역 이름 숨기기" else "지역 이름 보이기",
                             )
                         }
+                        IconButton(onClick = { showSettings = true }) {
+                            Icon(Icons.Filled.Settings, contentDescription = "설정")
+                        }
                     },
                 )
             },
             bottomBar = {
                 Surface(tonalElevation = 3.dp) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .navigationBarsPadding()
-                            .padding(horizontal = 20.dp, vertical = 14.dp),
-                    ) {
-                        if (!uiState.started) {
-                            ChallengeButton(onClick = viewModel::startQuiz, modifier = Modifier.fillMaxWidth())
-                        } else {
-                            Box(modifier = Modifier.fillMaxWidth()) {
-                                Text(
-                                    text = "${uiState.revealedCount} / ${uiState.regions.size} 완료",
-                                    modifier = Modifier.align(Alignment.CenterStart),
-                                    style = MaterialTheme.typography.bodyLarge,
-                                )
-                                OutlinedButton(
-                                    onClick = viewModel::stopHere,
-                                    modifier = Modifier.align(Alignment.CenterEnd),
-                                ) { Text("여기까지") }
+                    Column(modifier = Modifier.navigationBarsPadding()) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 20.dp, vertical = 14.dp),
+                        ) {
+                            if (!uiState.started) {
+                                ChallengeButton(onClick = viewModel::startQuiz, modifier = Modifier.fillMaxWidth())
+                            } else {
+                                Box(modifier = Modifier.fillMaxWidth()) {
+                                    Text(
+                                        text = "${uiState.revealedCount} / ${uiState.regions.size} 완료",
+                                        modifier = Modifier.align(Alignment.CenterStart),
+                                        style = MaterialTheme.typography.bodyLarge,
+                                    )
+                                    OutlinedButton(
+                                        onClick = viewModel::stopHere,
+                                        modifier = Modifier.align(Alignment.CenterEnd),
+                                    ) { Text("여기까지") }
+                                }
                             }
                         }
+                        BannerAd()
                     }
                 }
             },
@@ -223,7 +241,7 @@ fun MapScreen(viewModel: QuizViewModel = viewModel()) {
             }
         }
 
-        ConfettiOverlay(trigger = lastCompletion?.completedAtMillis, modifier = Modifier.fillMaxSize())
+        ConfettiOverlay(trigger = celebrateTrigger, modifier = Modifier.fillMaxSize())
 
         RemainingBanner(
             message = remainingMessage,
@@ -241,6 +259,9 @@ fun MapScreen(viewModel: QuizViewModel = viewModel()) {
             onDismiss = viewModel::dismissAnswerSheet,
             onRequestCharacterCountHint = viewModel::requestCharacterCountHint,
             onRequestChoseongHint = viewModel::requestChoseongHint,
+            onAutoHint = viewModel::requestAutoHints,
+            characterCountHintEnabled = settings.characterCountHintEnabled,
+            choseongHintEnabled = settings.choseongHintEnabled,
         )
     }
 
@@ -249,6 +270,14 @@ fun MapScreen(viewModel: QuizViewModel = viewModel()) {
             entries = remember(showHistoryDialog) { viewModel.loadHistory() },
             onDeleteEntry = viewModel::deleteHistoryEntry,
             onDismiss = { showHistoryDialog = false },
+        )
+    }
+
+    if (showSettings) {
+        SettingsScreen(
+            settings = settings,
+            onSettingsChange = viewModel::updateSettings,
+            onClose = { showSettings = false },
         )
     }
 
@@ -271,6 +300,12 @@ fun MapScreen(viewModel: QuizViewModel = viewModel()) {
             onDismiss = { showCompletionDialog = false },
         )
     }
+}
+
+private tailrec fun Context.findActivity(): Activity? = when (this) {
+    is Activity -> this
+    is ContextWrapper -> baseContext.findActivity()
+    else -> null
 }
 
 @Composable

@@ -11,6 +11,30 @@ object HangulUtil {
         'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ',
     )
 
+    private val COMPOSITE_JUNG = setOf(9, 10, 11, 14, 15, 16, 19)
+    private val COMPOSITE_JONG = setOf(3, 5, 6, 9, 10, 11, 12, 13, 14, 15, 18)
+
+    /**
+     * 자모 단위로 센 글자 수. 한글 IME는 받침/모음을 지워도 글자 수가 그대로인 경우가 많아서
+     * (예: "한" -> "하"), 백스페이스 여부는 이 값이 줄었는지로 판단한다.
+     */
+    fun jamoCount(text: String): Int {
+        var count = 0
+        for (ch in text) {
+            val code = ch.code
+            if (code in SYLLABLE_BASE..SYLLABLE_END) {
+                val offset = code - SYLLABLE_BASE
+                val jung = (offset % (JUNG_COUNT * JONG_COUNT)) / JONG_COUNT
+                val jong = offset % JONG_COUNT
+                count += 1 + (if (jung in COMPOSITE_JUNG) 2 else 1) +
+                    (if (jong == 0) 0 else if (jong in COMPOSITE_JONG) 2 else 1)
+            } else {
+                count += 1
+            }
+        }
+        return count
+    }
+
     /** e.g. "부천시" -> "ㅂㅊㅅ". Non-Hangul-syllable characters pass through unchanged. */
     fun choseong(text: String): String = buildString {
         for (ch in text) {
