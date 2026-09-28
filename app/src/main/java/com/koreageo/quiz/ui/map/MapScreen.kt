@@ -75,6 +75,7 @@ fun MapScreen(viewModel: QuizViewModel = viewModel()) {
     var showSettings by rememberSaveable { mutableStateOf(false) }
     var celebrateTrigger by remember { mutableStateOf<Long?>(null) }
     val context = LocalContext.current
+    var startingQuiz by remember { mutableStateOf(false) }
     var fitScale by remember { mutableStateOf(1f) }
     var remainingMessage by remember { mutableStateOf<String?>(null) }
     var nextBlankCursor by remember(uiState.level.key) { mutableStateOf(0) }
@@ -88,6 +89,18 @@ fun MapScreen(viewModel: QuizViewModel = viewModel()) {
             nextBlankCursor++
             viewModel.tapRegion(target)
             scope.launch { camera.animateTo(focusTransform(target, canvasSize, fitScale)) }
+        }
+    }
+
+    // 도전 버튼으로 5번 진입할 때마다 시작 직전에 전면 광고를 보여준다.
+    val startQuizWithAdCheck: () -> Unit = {
+        if (!startingQuiz) {
+            startingQuiz = true
+            scope.launch {
+                if (viewModel.registerQuizEntry()) context.findActivity()?.let { Ads.showInterstitial(it) }
+                viewModel.startQuiz()
+                startingQuiz = false
+            }
         }
     }
 
@@ -186,7 +199,7 @@ fun MapScreen(viewModel: QuizViewModel = viewModel()) {
                                 .padding(horizontal = 20.dp, vertical = 14.dp),
                         ) {
                             if (!uiState.started) {
-                                ChallengeButton(onClick = viewModel::startQuiz, modifier = Modifier.fillMaxWidth())
+                                ChallengeButton(onClick = startQuizWithAdCheck, modifier = Modifier.fillMaxWidth())
                             } else {
                                 Box(modifier = Modifier.fillMaxWidth()) {
                                     Text(
@@ -291,7 +304,7 @@ fun MapScreen(viewModel: QuizViewModel = viewModel()) {
             showBackToNational = uiState.level is MapLevel.Province,
             onRestart = {
                 showCompletionDialog = false
-                viewModel.startQuiz()
+                startQuizWithAdCheck()
             },
             onBackToNational = {
                 showCompletionDialog = false

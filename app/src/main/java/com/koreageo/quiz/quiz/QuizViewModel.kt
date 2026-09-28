@@ -33,6 +33,8 @@ data class QuizUiState(
     val canDrillDeeper: Boolean get() = level is MapLevel.National
 }
 
+private const val QUIZ_ENTRIES_PER_AD = 5
+
 class QuizViewModel(application: Application) : AndroidViewModel(application) {
 
     private val repository = GeoRepository(application)
@@ -130,6 +132,10 @@ class QuizViewModel(application: Application) : AndroidViewModel(application) {
         }
         persistSession()
     }
+
+    /** 도전 버튼으로 진입할 때마다 부른다. [QUIZ_ENTRIES_PER_AD]번째마다 true(전면 광고를 띄울 차례)를 돌려준다. */
+    fun registerQuizEntry(): Boolean =
+        settingsRepository.incrementQuizEntryCount() % QUIZ_ENTRIES_PER_AD == 0
 
     fun startQuiz() {
         questStartedAtByLevel[_uiState.value.level.key] = System.currentTimeMillis()

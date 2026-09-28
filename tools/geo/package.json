@@ -1,0 +1,8 @@
+{
+  "name": "korea-geo-tools",
+  "private": true,
+  "description": "앱에 들어가는 행정구역 경계 데이터(app/src/main/assets/geo)를 만들고 갱신 여부를 확인하는 스크립트",
+  "dependencies": {
+    "admdongkor": "^0.5.1"
+  }
+}

@@ -23,10 +23,18 @@ class SettingsRepository(context: Context) {
             .apply()
     }
 
+    /** 도전 진입 횟수를 1 늘리고 새 값을 돌려준다 (앱을 껐다 켜도 이어서 센다). */
+    fun incrementQuizEntryCount(): Int {
+        val next = prefs.getInt(KEY_QUIZ_ENTRY_COUNT, 0) + 1
+        prefs.edit().putInt(KEY_QUIZ_ENTRY_COUNT, next).apply()
+        return next
+    }
+
     private companion object {
         const val PREFS_NAME = "quiz_settings"
         const val KEY_SHOW_LABELS = "showLabelsInBrowseMode"
         const val KEY_CHAR_COUNT_HINT = "characterCountHintEnabled"
         const val KEY_CHOSEONG_HINT = "choseongHintEnabled"
+        const val KEY_QUIZ_ENTRY_COUNT = "quizEntryCount"
     }
 }

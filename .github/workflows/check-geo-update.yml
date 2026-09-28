@@ -1,0 +1,45 @@
+name: 행정구역 데이터 갱신 확인
+
+on:
+  schedule:
+    - cron: "0 0 * * *" # 매일 09:00 (KST)
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: 의존성 설치
+        working-directory: tools/geo
+        run: npm install --no-audit --no-fund
+
+      - name: 새 스냅샷 확인
+        id: check
+        working-directory: tools/geo
+        run: node check_update.js
+
+      - name: 새 스냅샷이 있으면 이슈 등록
+        if: steps.check.outputs.newer == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          LATEST: ${{ steps.check.outputs.latest }}
+          BUNDLED: ${{ steps.check.outputs.bundled }}
+        run: |
+          TITLE="새 행정구역 스냅샷 ${LATEST} 발견 (앱 반영: ${BUNDLED})"
+          if [ -n "$(gh issue list --state all --search "\"$TITLE\" in:title" --json number --jq '.[].number')" ]; then
+            echo "이미 등록된 이슈입니다."
+            exit 0
+          fi
+          gh issue create --title "$TITLE" --body "@${{ github.repository_owner }} admdongkor에 새 행정구역 스냅샷 \`${LATEST}\`이 올라왔습니다. 현재 앱은 \`${BUNDLED}\` 기준입니다.
+
+          갱신 절차는 README의 'Refreshing the boundary data'를 참고하세요."

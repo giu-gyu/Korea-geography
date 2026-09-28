@@ -52,10 +52,7 @@ Boundary polygons come from the [`admdongkor`](https://github.com/vuski/admdongk
 npm package (MIT, 행정안전부 공개자료 가공, actively maintained with dated
 snapshots back to 1975). The app bundles the `"20260701"` snapshot — the most recent available at
 build time, which happens to be the date Korea's latest administrative
-changes took effect (제9회 지방선거 다음 날). To refresh later, call
-`adk.get(newVersion, "sido" | "sgg")` for a newer entry from `adk.versions()`
-and re-run the ward-merge preprocessing script (see git history for the
-script used to build the currently-bundled snapshot).
+changes took effect (제9회 지방선거 다음 날). See "Refreshing the boundary data" below for how to update it.
 
 Cities whose wards appear as separate sgg features in the source (수원시,
 성남시, 안양시, 부천시, 안산시, 고양시, 용인시, 화성시, 청주시, 천안시,
@@ -82,10 +79,31 @@ decision (자치구/법정동 would need ~3,500 more boundary records). The
 `MapLevel` sealed class and `QuizViewModel` are written so a third level could
 be added later by extending the `when` branches rather than restructuring.
 
+### Refreshing the boundary data
+
+The scripts live in `tools/geo/` and regenerate the bundled assets byte-for-byte
+(`node build.js` output is identical to `app/src/main/assets/geo/`).
+
+1. `cd tools/geo && npm install`
+2. `node check_update.js` — tells you whether `admdongkor` has a snapshot newer
+   than `BUNDLED_VERSION`.
+3. `node fetch.js` (downloads the latest snapshot), `node build.js` (merges wards,
+   writes `out/`), `node verify.js` (sanity checks).
+4. Copy `out/*.json` over `app/src/main/assets/geo/` (delete stale
+   `sigungu_*.json`), update `BUNDLED_VERSION`, update `PROVINCE_ALIASES` in
+   `HangulUtil.kt` if a province was renamed/added, and bump `CURRENT_DATA_VERSION`
+   in `SessionRepository.kt` if region codes changed.
+
+A GitHub Actions workflow (`.github/workflows/check-geo-update.yml`) runs step 2
+every day and opens an issue (which emails the repo owner) when a newer snapshot
+appears. It only detects new *data*; a law that has passed but isn't in the
+dataset yet still needs an occasional look at the news.
+
 ## Ads
 
 A bottom adaptive banner is always shown, and an interstitial plays every time a
-run ends (all answered or "여기까지"), before the result dialog. The app currently
+run ends (all answered or "여기까지"), before the result dialog, and on every 5th
+press of 도전/다시 도전 (right before the run starts). The app currently
 uses Google's public **test** AdMob IDs, set in one place: `defaultConfig` in
 `app/build.gradle.kts` (`admobAppId`, `ADMOB_BANNER_ID`, `ADMOB_INTERSTITIAL_ID`).
 Replace them with real IDs from the AdMob console before publishing.
